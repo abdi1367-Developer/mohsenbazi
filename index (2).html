@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>محسن ماریو | Mohsen Mario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:#05030c;
+    background-image:radial-gradient(circle at 50% -10%, #1d0b38 0%, #08040f 55%, #05030c 100%);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Vazirmatn',Tahoma,system-ui,sans-serif;
+    color:#e8f9ff;overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  #wrap{
+    position:relative;
+    width:min(96vw, calc(94vh * 16 / 9), 1120px);
+    aspect-ratio:16/9;
+    border-radius:14px;
+    box-shadow:0 0 0 1px rgba(0,229,255,.28),
+               0 0 40px rgba(0,229,255,.15),
+               0 0 90px rgba(255,45,149,.12);
+    overflow:hidden;
+    background:#05030c;
+  }
+  canvas{display:block;width:100%;height:100%;}
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:absolute;top:0;left:0;right:0;
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    padding:10px 16px;pointer-events:none;
+    font-size:clamp(.62rem,1.5vw,.95rem);
+    font-weight:600;
+    text-shadow:0 0 10px rgba(0,229,255,.85);
+    letter-spacing:.3px;
+    flex-wrap:wrap;
+  }
+  #hud .grp{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  #hud .tag{color:#7fe9ff;opacity:.7;font-weight:400;}
+  #hud .val{color:#fff;}
+  #hud .hearts{color:#ff2d95;text-shadow:0 0 12px rgba(255,45,149,.9);letter-spacing:2px;}
+  #hud .lvl{color:#ffe600;text-shadow:0 0 12px rgba(255,230,0,.8);}
+
+  /* ---------- overlays ---------- */
+  #overlays{
+    position:absolute;inset:0;display:none;
+    align-items:center;justify-content:center;
+    background:rgba(5,3,12,.74);
+    -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  }
+  #overlays.show{display:flex;}
+
+  .screen{
+    display:none;flex-direction:column;align-items:center;text-align:center;
+    padding:26px;width:92%;max-width:560px;
+    animation:fadeIn .22s ease;
+  }
+  .screen.active{display:flex;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+  .title{
+    font-size:clamp(2rem,6.5vw,3.4rem);
+    font-weight:900;
+    letter-spacing:2px;
+    color:#fff;
+    text-shadow:0 0 12px #00e5ff,0 0 34px #00e5ff,0 0 70px rgba(0,229,255,.5);
+    line-height:1.15;
+  }
+  .title.small{font-size:clamp(1.3rem,4.5vw,2rem);text-shadow:0 0 12px #ff2d95,0 0 34px rgba(255,45,149,.55);}
+  .sub{
+    margin-top:8px;font-size:clamp(.6rem,1.8vw,.78rem);
+    letter-spacing:4px;color:#ff2d95;opacity:.85;font-weight:600;
+    text-shadow:0 0 12px rgba(255,45,149,.8);
+  }
+  .hint{
+    margin-top:16px;font-size:clamp(.7rem,2vw,.9rem);
+    color:#9ad9ea;line-height:2;opacity:.9;
+  }
+  .hint b{color:#00e5ff;font-weight:700;}
+
+  .btns{width:100%;max-width:340px;margin-top:22px;}
+  .btn{
+    display:block;width:100%;
+    padding:12px 18px;margin:9px 0;
+    background:rgba(0,229,255,.06);
+    border:1px solid rgba(0,229,255,.45);
+    color:#a9f0ff;border-radius:9px;
+    font-family:inherit;font-weight:600;
+    font-size:clamp(.8rem,2.2vw,1rem);
+    cursor:pointer;transition:all .16s ease;
+    letter-spacing:.5px;
+  }
+  .btn:hover:not(:disabled){
+    background:rgba(0,229,255,.18);color:#fff;
+    box-shadow:0 0 20px rgba(0,229,255,.5);
+    transform:translateY(-1px);
+  }
+  .btn:active:not(:disabled){transform:translateY(0);}
+  .btn.primary{
+    border-color:rgba(255,45,149,.65);
+    color:#ffb6dd;background:rgba(255,45,149,.09);
+  }
+  .btn.primary:hover{
+    background:rgba(255,45,149,.22);color:#fff;
+    box-shadow:0 0 24px rgba(255,45,149,.6);
+  }
+  .btn:disabled{opacity:.3;cursor:not-allowed;}
+
+  .diff-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;justify-content:center;}
+  .diff-btn{
+    padding:14px 26px;border-radius:10px;cursor:pointer;
+    font-family:inherit;font-weight:700;font-size:clamp(.8rem,2.2vw,1rem);
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.18);
+    color:#c9d8e0;transition:all .16s ease;
+  }
+  .diff-btn:hover{border-color:rgba(0,229,255,.6);color:#fff;}
+  .diff-btn.sel{
+    border-color:#00e5ff;color:#fff;background:rgba(0,229,255,.16);
+    box-shadow:0 0 22px rgba(0,229,255,.5),inset 0 0 18px rgba(0,229,255,.12);
+  }
+  .diff-btn[data-diff="hard"].sel{
+    border-color:#ff2d95;background:rgba(255,45,149,.16);
+    box-shadow:0 0 22px rgba(255,45,149,.55),inset 0 0 18px rgba(255,45,149,.12);
+  }
+
+  .stats{
+    display:flex;gap:26px;margin-top:20px;flex-wrap:wrap;justify-content:center;
+  }
+  .stat{display:flex;flex-direction:column;gap:4px;}
+  .stat .k{font-size:.72rem;color:#7fa8b8;letter-spacing:1px;}
+  .stat .v{font-size:1.5rem;font-weight:800;color:#ffe600;text-shadow:0 0 16px rgba(255,230,0,.7);}
+  .stat .v.cy{color:#00e5ff;text-shadow:0 0 16px rgba(0,229,255,.8);}
+
+  .keyrow{
+    display:flex;justify-content:space-between;align-items:center;gap:14px;
+    width:100%;padding:9px 4px;border-bottom:1px dashed rgba(0,229,255,.15);
+    font-size:clamp(.7rem,2vw,.88rem);
+  }
+  .keyrow:last-child{border-bottom:none;}
+  .keyrow .k{color:#9ad9ea;}
+  .keys{display:flex;gap:6px;flex-wrap:wrap;}
+  kbd{
+    background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.45);
+    border-radius:6px;padding:3px 9px;font-family:inherit;font-size:.78em;
+    color:#bff4ff;box-shadow:0 0 10px rgba(0,229,255,.2);
+  }
+
+  #toast{
+    position:absolute;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:rgba(0,229,255,.12);border:1px solid rgba(0,229,255,.55);
+    color:#c9f7ff;padding:9px 22px;border-radius:30px;font-size:.82rem;font-weight:600;
+    opacity:0;transition:all .3s ease;pointer-events:none;
+    box-shadow:0 0 24px rgba(0,229,255,.35);
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <!-- ======= HUD ======= -->
+  <div id="hud">
+    <div class="grp">
+      <span><span class="tag">مرحله</span> <span class="val lvl" id="hudLevel">1</span><span class="tag">/10</span></span>
+      <span><span class="tag">امتیاز</span> <span class="val" id="hudScore">0</span></span>
+    </div>
+    <div class="grp">
+      <span><span class="tag">سختی</span> <span class="val" id="hudDiff">متوسط</span></span>
+      <span><span class="tag">مرگ</span> <span class="val" id="hudDeaths">0</span></span>
+      <span class="hearts" id="hudHearts">♥♥♥</span>
+    </div>
+  </div>
+
+  <!-- ======= OVERLAYS ======= -->
+  <div id="overlays">
+
+    <div class="screen" id="scr-menu">
+      <h1 class="title">محسن ماریو</h1>
+      <p class="sub">MOHSEN MARIO // 10 LEVELS</p>
+      <div class="btns">
+        <button class="btn primary" id="btn-new">شروع بازی جدید</button>
+        <button class="btn" id="btn-continue">ادامه بازی</button>
+        <button class="btn" id="btn-help">راهنما و کنترل‌ها</button>
+      </div>
+      <p class="hint" id="menu-save-info"></p>
+    </div>
+
+    <div class="screen" id="scr-diff">
+      <h2 class="title small">درجه سختی</h2>
+      <div class="diff-row">
+        <button class="diff-btn" data-diff="easy">آسان</button>
+        <button class="diff-btn sel" data-diff="normal">متوسط</button>
+        <button class="diff-btn" data-diff="hard">سخت</button>
+      </div>
+      <p class="hint" id="diff-hint"></p>
+      <div class="btns">
+        <button class="btn primary" id="btn-diff-start">شروع مأموریت</button>
+        <button class="btn" id="btn-diff-back">بازگشت</button>
+      </div>
+    </div>
+
+    <div class="screen" id="scr-help">
+      <h2 class="title small">کنترل‌ها</h2>
+      <div style="width:100%;margin-top:18px;">
+        <div class="keyrow"><span class="k">حرکت به چپ و راست</span>
+          <span class="keys"><kbd>◀</kbd><kbd>▶</kbd><kbd>A</kbd><kbd>D</kbd></span></div>
+        <div class="keyrow"><span class="k">پرش</span>
+          <span class="keys"><kbd>Space</kbd><kbd>▲</kbd><kbd>W</kbd></span></div>
+        <div class="keyrow"><span class="k">شلیک</span>
+          <span class="keys"><kbd>X</kbd><kbd>J</kbd><kbd>Ctrl</kbd></span></div>
+        <div class="keyrow"><span class="k">توقف / منو</span>
+          <span class="keys"><kbd>Esc</kbd><kbd>P</kbd></span></div>
+      </div>
+      <p class="hint">
+        روی سر دشمن‌ها بپر یا با شلیک نابودشان کن.<br>
+        تراشه‌های زرد (<b>◆</b>) را جمع کن و به <b>دروازه سبز</b> برس.
+      </p>
+      <div class="btns">
+        <button class="btn primary" id="btn-help-back">بازگشت</button>
+      </div>
+    </div>
+
+    <div class="screen" id="scr-pause">
+      <h2 class="title small">توقف</h2>
+      <p class="hint">بازی متوقف شده است.</p>
+      <div class="btns">
+        <button class="btn primary" id="btn-resume">ادامه بازی</button>
+        <button class="btn" id="btn-save">ذخیره بازی</button>
+        <button class="btn" id="btn-pause-menu">بازگشت به منوی اصلی</button>
+      </div>
+    </div>
+
+    <div class="screen" id="scr-complete">
+      <h2 class="title small">مرحله کامل شد</h2>
+      <div class="stats">
+        <div class="stat"><span class="k">مرحله</span><span class="v cy" id="cmp-level">1</span></div>
+        <div class="stat"><span class="k">امتیاز</span><span class="v" id="cmp-score">0</span></div>
+      </div>
+      <div class="btns">
+        <button class="btn primary" id="btn-next">مرحله بعد</button>
+        <button class="btn" id="btn-cmp-menu">منوی اصلی</button>
+      </div>
+    </div>
+
+    <div class="screen" id="scr-victory">
+      <h1 class="title">پیروزی!</h1>
+      <p class="sub">SYSTEM HACKED // ALL 10 LEVELS</p>
+      <div class="stats">
+        <div class="stat"><span class="k">امتیاز نهایی</span><span class="v" id="vic-score">0</span></div>
+        <div class="stat"><span class="k">تعداد مرگ</span><span class="v cy" id="vic-deaths">0</span></div>
+      </div>
+      <div class="btns">
+        <button class="btn primary" id="btn-vic-menu">بازگشت به منو</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   محسن ماریو — پلتفرمر سایبرپانک
+   تک‌فایل: HTML + CSS + JS  (آماده دیپلوی روی Vercel)
+   ========================================================= */
+
+/* ---------------- ابزارها ---------------- */
+const clamp = (v,a,b)=> v<a?a:(v>b?b:v);
+const lerp  = (a,b,t)=> a+(b-a)*t;
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hash(n){
+  const s = Math.sin(n * 12.9898) * 43758.5453;
+  return s - Math.floor(s);
+}
+function aabb(a,b){
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+/* ---------------- ثابت‌ها ---------------- */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width;
+const H = canvas.height;
+
+const SAVE_KEY = 'mohsenmario_save_v1';
+
+const DIFFS = {
+  easy:   { key:'easy',   name:'آسان',  espd:0.85, ecount:0.70, grav:0.60, jump:-12.5, hearts:4, gap:80,  fire:11 },
+  normal: { key:'normal', name:'متوسط', espd:1.25, ecount:1.00, grav:0.62, jump:-12.1, hearts:3, gap:100, fire:14 },
+  hard:   { key:'hard',   name:'سخت',   espd:1.80, ecount:1.40, grav:0.68, jump:-11.8, hearts:2, gap:118, fire:17 }
+};
+
+const DIFF_DESC = {
+  easy:   'دشمنان کندتر و کم‌تعداد، شکاف‌های کوتاه‌تر و قلب‌های بیشتر. مناسب شروع.',
+  normal: 'تجربه‌ی متعادل؛ چالش واقعی سایبری.',
+  hard:   'دشمنان سریع و پرتعداد، شکاف‌های بلند و فقط دو قلب. برای حرفه‌ای‌ها.'
+};
+
+const MAX_LEVEL = 10;
+
+/* ---------------- وضعیت بازی ---------------- */
+const state = {
+  screen : 'menu',
+  level  : 1,
+  score  : 0,
+  hearts : 3,
+  deaths : 0,
+  diff   : 'normal'
+};
+
+let level = null;
+let player = null;
+let bullets = [];
+let particles = [];
+let camera = { x:0 };
+let frame = 0;
+let levelStartScore = 0;
+
+const input = { left:false, right:false, jump:false, jumpPressed:false, shoot:false };
+
+/* =========================================================
+   پس‌زمینه‌ی گرافیکی سایبرپانک (پارالاکس چندلایه)
+   ========================================================= */
+const bg = {
+  stars: [],
+  layers: [],
+  cars: [],
+  inited: false
+};
+
+function initBackground(){
+  if(bg.inited) return;
+
+  // ستاره‌ها
+  for(let i=0;i<140;i++){
+    bg.stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H * 0.62,
+      r: Math.random() * 1.3 + 0.3,
+      a: 0.25 + Math.random() * 0.75,
+      tw: Math.random() * 6.28
+    });
+  }
+
+  // لایه‌های ساختمان
+  const configs = [
+    { speed: 0.10, baseW: 135, minH: 90,  maxH: 210, color:'#070517', accent:'#7a00ff',
+      window:'rgba(122,0,255,0.42)', count: 70, hasAntenna:true, hasSign:false },
+    { speed: 0.26, baseW: 105, minH: 130, maxH: 275, color:'#0b0724', accent:'#ff2d95',
+      window:'rgba(255,45,149,0.42)', count: 70, hasAntenna:true, hasSign:true },
+    { speed: 0.50, baseW: 82,  minH: 95,  maxH: 205, color:'#100a30', accent:'#00e5ff',
+      window:'rgba(0,229,255,0.55)', count: 70, hasAntenna:true, hasSign:true }
+  ];
+
+  configs.forEach(function(cfg, li){
+    const list = [];
+    for(let i=0;i<cfg.count;i++){
+      const r1 = hash(i * 7.7 + li * 137.3);
+      const r2 = hash(i * 3.3 + li * 251.7 + 9);
+      const r3 = hash(i * 11.1 + li * 433.1 + 3);
+      const r4 = hash(i * 5.5 + li * 617.9 + 7);
+
+      list.push({
+        x: i * cfg.baseW,
+        w: cfg.baseW * (0.62 + r2 * 0.52),
+        h: cfg.minH + r1 * (cfg.maxH - cfg.minH),
+        seed: i + li * 1000,
+        antenna: r1 > 0.62,
+        antennaH: 14 + r4 * 22,
+        sign: r3 > 0.62,
+        signColor: r3 > 0.86 ? '#ffe600' : (r3 > 0.74 ? '#ff2d95' : '#00e5ff'),
+        winSeed: r2
+      });
+    }
+    bg.layers.push({
+      speed: cfg.speed,
+      color: cfg.color,
+      accent: cfg.accent,
+      window: cfg.window,
+      buildings: list,
+      totalW: cfg.count * cfg.baseW,
+      index: li
+    });
+  });
+
+  // خودروهای پرنده
+  for(let i=0;i<7;i++){
+    bg.cars.push({
+      x: Math.random() * W,
+      y: 50 + Math.random() * 220,
+      spd: (Math.random() * 0.7 + 0.35) * (Math.random() < 0.5 ? 1 : -1),
+      len: 22 + Math.random() * 34,
+      color: Math.random() < 0.5 ? '#00e5ff' : (Math.random() < 0.5 ? '#ff2d95' : '#ffe600')
+    });
+  }
+
+  bg.inited = true;
+}
+
+/* ------- ماه نئونی ------- */
+function drawMoon(){
+  const mx = W * 0.76;
+  const my = 128;
+  const mr = 72;
+
+  // هاله
+  const glow = ctx.createRadialGradient(mx, my, mr * 0.55, mx, my, mr * 3.1);
+  glow.addColorStop(0,   'rgba(255,45,149,0.38)');
+  glow.addColorStop(0.45,'rgba(122,0,255,0.16)');
+  glow.addColorStop(1,   'rgba(122,0,255,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H * 0.62);
+
+  // بدنه
+  const mg = ctx.createLinearGradient(mx, my - mr, mx, my + mr);
+  mg.addColorStop(0,   '#ff7ec2');
+  mg.addColorStop(0.45,'#ff2d95');
+  mg.addColorStop(1,   '#7a00ff');
+  ctx.fillStyle = mg;
+  ctx.beginPath();
+  ctx.arc(mx, my, mr, 0, Math.PI * 2);
+  ctx.fill();
+
+  // خطوط اسکن روی ماه
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(mx, my, mr, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = '#05020c';
+  for(let y = my - mr; y < my + mr; y += 5){
+    ctx.fillRect(mx - mr, y, mr * 2, 2);
+  }
+  ctx.restore();
+
+  // حلقه
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.ellipse(mx, my, mr + 16, mr * 0.28, -0.35, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ------- لایه‌ی ساختمان‌ها ------- */
+function drawBuildingLayer(layer){
+  const horizonY = H - 70;
+  const totalW = layer.totalW;
+  let baseOff = (-camera.x * layer.speed) % totalW;
+  if(baseOff > 0) baseOff -= totalW;
+
+  const reps = Math.ceil(W / totalW) + 2;
+
+  for(let rep = 0; rep < reps; rep++){
+    const repOff = baseOff + rep * totalW;
+
+    for(let i=0;i<layer.buildings.length;i++){
+      const b = layer.buildings[i];
+      const bx = b.x + repOff;
+      if(bx + b.w < -60 || bx > W + 60) continue;
+
+      const by = horizonY - b.h;
+
+      // بدنه
+      ctx.fillStyle = layer.color;
+      ctx.fillRect(bx, by, b.w, b.h);
+
+      // لبه‌ی نئونی بالا
+      ctx.save();
+      ctx.shadowColor = layer.accent;
+      ctx.shadowBlur = 9;
+      ctx.fillStyle = layer.accent;
+      ctx.globalAlpha = 0.95;
+      ctx.fillRect(bx, by - 1, b.w, 2);
+      ctx.restore();
+
+      // پنجره‌ها
+      const winW = 5, winH = 7, gapX = 11, gapY = 14;
+      const cols = Math.floor((b.w - 12) / gapX);
+      const rows = Math.floor((b.h - 16) / gapY);
+      for(let wy=0; wy<rows; wy++){
+        for(let wx=0; wx<cols; wx++){
+          const sv = hash(b.seed * 17.31 + wy * 5.13 + wx * 2.71);
+          if(sv > 0.48){
+            const px = bx + 6 + wx * gapX;
+            const py = by + 8 + wy * gapY;
+            if(px + winW < bx + b.w - 4 && py + winH < by + b.h - 4){
+              ctx.globalAlpha = 0.45 + sv * 0.55;
+              ctx.fillStyle = layer.window;
+              ctx.fillRect(px, py, winW, winH);
+            }
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      // آنتن
+      if(b.antenna && layer.speed > 0.15){
+        const ax = bx + b.w * 0.32;
+        ctx.strokeStyle = layer.accent;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.55;
+        ctx.beginPath();
+        ctx.moveTo(ax, by);
+        ctx.lineTo(ax, by - b.antennaH);
+        ctx.stroke();
+
+        // چراغ چشمک‌زن
+        const blink = (Math.sin(frame * 0.08 + b.seed * 0.7) + 1) * 0.5;
+        ctx.globalAlpha = 0.35 + blink * 0.65;
+        ctx.fillStyle = '#ff2d95';
+        ctx.fillRect(ax - 1.5, by - b.antennaH - 3, 3, 3);
+        ctx.globalAlpha = 1;
+      }
+
+      // تابلوی نئونی
+      if(b.sign && layer.speed > 0.2){
+        const sw = 10 + hash(b.seed * 7.7) * 16;
+        const sh = 4 + hash(b.seed * 5.1) * 5;
+        const sx = bx + (b.w - sw) / 2;
+        const sy = by + 16 + hash(b.seed * 11.3) * Math.max(6, b.h - 56);
+        const pulse = 0.75 + 0.25 * Math.sin(frame * 0.1 + b.seed);
+
+        ctx.save();
+        ctx.shadowColor = b.signColor;
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = b.signColor;
+        ctx.globalAlpha = pulse;
+        ctx.fillRect(sx, sy, sw, sh);
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+}
+
+/* ------- خودروهای پرنده ------- */
+function drawFlyingCars(){
+  for(let i=0;i<bg.cars.length;i++){
+    const c = bg.cars[i];
+    c.x += c.spd;
+    if(c.x > W + 120) c.x = -120;
+    if(c.x < -120) c.x = W + 120;
+
+    const dir = c.spd > 0 ? 1 : -1;
+
+    // دنباله
+    const tg = ctx.createLinearGradient(c.x, c.y, c.x - dir * c.len, c.y);
+    tg.addColorStop(0, c.color);
+    tg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.strokeStyle = tg;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.75;
+    ctx.beginPath();
+    ctx.moveTo(c.x, c.y);
+    ctx.lineTo(c.x - dir * c.len, c.y);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // سر
+    ctx.save();
+    ctx.shadowColor = c.color;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = c.color;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ------- پس‌زمینه‌ی کامل ------- */
+function drawBackground(){
+  // آسمان
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0,    '#05020c');
+  g.addColorStop(0.38, '#0d0520');
+  g.addColorStop(0.72, '#1a0833');
+  g.addColorStop(1,    '#2b0a3d');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // ستاره‌ها
+  for(let i=0;i<bg.stars.length;i++){
+    const s = bg.stars[i];
+    const tw = 0.5 + 0.5 * Math.sin(frame * 0.05 + s.tw);
+    ctx.globalAlpha = s.a * tw;
+    ctx.fillStyle = '#cceeff';
+    ctx.fillRect(s.x, s.y, s.r, s.r);
+  }
+  ctx.globalAlpha = 1;
+
+  // ماه
+  drawMoon();
+
+  // مه افق
+  const horizonY = H - 70;
+  const fogG = ctx.createLinearGradient(0, horizonY - 150, 0, horizonY);
+  fogG.addColorStop(0,   'rgba(255,45,149,0)');
+  fogG.addColorStop(0.7, 'rgba(255,45,149,0.10)');
+  fogG.addColorStop(1,   'rgba(0,229,255,0.18)');
+  ctx.fillStyle = fogG;
+  ctx.fillRect(0, horizonY - 150, W, 150);
+
+  // لایه‌های ساختمان (عقب → جلو)
+  for(let li=0; li<bg.layers.length; li++){
+    drawBuildingLayer(bg.layers[li]);
+  }
+
+  // خودروهای پرنده
+  drawFlyingCars();
+
+  // غبار جوی روی لایه‌های دور
+  const hazeG = ctx.createLinearGradient(0, horizonY - 90, 0, H);
+  hazeG.addColorStop(0, 'rgba(10,3,20,0)');
+  hazeG.addColorStop(1, 'rgba(10,3,20,0.45)');
+  ctx.fillStyle = hazeG;
+  ctx.fillRect(0, horizonY - 90, W, 90);
+}
+
+/* ---------------- ذخیره‌سازی ---------------- */
+function saveGame(levelToSave){
+  try{
+    const data = {
+      level : clamp(levelToSave || state.level, 1, MAX_LEVEL),
+      score : state.score,
+      diff  : state.diff,
+      deaths: state.deaths
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  }catch(e){}
+}
+function loadSave(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    const d = JSON.parse(raw);
+    if(!d || typeof d !== 'object') return null;
+    return d;
+  }catch(e){ return null; }
+}
+
+/* ---------------- ساخت مرحله ---------------- */
+function buildLevel(n){
+  const d = DIFFS[state.diff];
+  const rng = mulberry32(1337 + n * 7919);
+  const width = 2600 + n * 280;
+  const groundY = H - 70;
+
+  const segs = [];
+  let cursor = 0;
+  let guard = 0;
+  while(cursor < width && guard++ < 300){
+    const remain = width - cursor;
+    let segW = 240 + rng() * 360;
+    const gapW = (remain > segW + 200) ? (60 + rng() * (d.gap - 60)) : 0;
+    if(segW + gapW > remain) segW = remain;
+    segs.push({ x:cursor, w:segW });
+    cursor += segW + gapW;
+  }
+  if(segs.length > 1 && segs[segs.length-1].w < 180){
+    const last = segs.pop();
+    const prev = segs[segs.length-1];
+    prev.w = (last.x + last.w) - prev.x;
+  }
+
+  const plats = [];
+  segs.forEach(function(s){ plats.push({ x:s.x, y:groundY, w:s.w, h:70, kind:'ground' }); });
+
+  const floatCount = 6 + n;
+  for(let i=0;i<floatCount;i++){
+    const px = 350 + rng() * Math.max(1, width - 800);
+    const py = groundY - 115 - rng() * 155;
+    const pw = 90 + rng() * 100;
+    plats.push({ x:px, y:py, w:pw, h:16, kind:'plat' });
+  }
+
+  const enemies = [];
+  segs.forEach(function(s, i){
+    if(i === 0 || s.w < 170) return;
+    let cnt = Math.round((1 + rng()) * d.ecount * (0.85 + n * 0.06));
+    cnt = clamp(cnt, 1, 3);
+    for(let k=0;k<cnt;k++){
+      const ex = s.x + 30 + rng() * Math.max(10, s.w - 90);
+      enemies.push({
+        x: ex, y: groundY - 30, w: 26, h: 30,
+        dir: rng() < 0.5 ? -1 : 1,
+        spd: d.espd * (0.9 + rng() * 0.5),
+        minX: s.x + 8,
+        maxX: s.x + s.w - 8,
+        alive: true,
+        t: rng() * 10
+      });
+    }
+  });
+
+  const coins = [];
+  segs.forEach(function(s, i){
+    if(i === 0) return;
+    const cnt = 2 + Math.floor(rng() * 4);
+    for(let k=0;k<cnt;k++){
+      coins.push({
+        x: s.x + 40 + rng() * Math.max(10, s.w - 80),
+        y: groundY - 42 - rng() * 85,
+        r: 9, got:false, t: rng() * 6
+      });
+    }
+  });
+  plats.filter(function(p){ return p.kind === 'plat'; }).forEach(function(p){
+    if(rng() < 0.72){
+      const cnt = 1 + Math.floor(rng() * 3);
+      for(let k=0;k<cnt;k++){
+        coins.push({ x: p.x + 22 + k * 30, y: p.y - 34, r:9, got:false, t: rng()*6 });
+      }
+    }
+  });
+
+  const lastSeg = segs[segs.length - 1];
+  const portal = {
+    x: Math.max(lastSeg.x + lastSeg.w - 105, lastSeg.x + 40),
+    y: groundY - 96,
+    w: 56, h: 96
+  };
+
+  return { width, groundY, plats, segs, enemies, coins, portal, num:n };
+}
+
+/* ---------------- بازیکن ---------------- */
+function makePlayer(groundY){
+  return {
+    x: 60, y: groundY - 130, w: 30, h: 52,
+    vx: 0, vy: 0,
+    onGround: false, face: 1,
+    coyote: 0, jumpBuf: 0, jumping: false,
+    fireCd: 0, invuln: 0
+  };
+}
+
+function startLevel(n){
+  state.level = clamp(n, 1, MAX_LEVEL);
+  state.hearts = DIFFS[state.diff].hearts;
+  level = buildLevel(state.level);
+  player = makePlayer(level.groundY);
+  bullets = [];
+  particles = [];
+  camera.x = 0;
+  levelStartScore = state.score;
+  input.jumpPressed = false;
+
+  state.screen = 'playing';
+  showScreen(null);
+  updateHUD();
+}
+
+/* ---------------- برخورد ---------------- */
+function moveEntity(e, plats){
+  e.x += e.vx;
+  for(let i=0;i<plats.length;i++){
+    const pl = plats[i];
+    if(pl.kind === 'plat') continue;
+    if(aabb(e, pl)){
+      if(e.vx > 0) e.x = pl.x - e.w;
+      else if(e.vx < 0) e.x = pl.x + pl.w;
+      e.vx = 0;
+    }
+  }
+  const prevBottom = e.y + e.h;
+  e.y += e.vy;
+  e.onGround = false;
+  for(let i=0;i<plats.length;i++){
+    const pl = plats[i];
+    if(!aabb(e, pl)) continue;
+    if(pl.kind === 'plat'){
+      if(e.vy >= 0 && prevBottom <= pl.y + 8){
+        e.y = pl.y - e.h;
+        e.vy = 0;
+        e.onGround = true;
+      }
+    }else{
+      if(e.vy > 0){ e.y = pl.y - e.h; e.vy = 0; e.onGround = true; }
+      else if(e.vy < 0){ e.y = pl.y + pl.h; e.vy = 0; }
+    }
+  }
+}
+
+/* ---------------- ذرات ---------------- */
+function spawnParticles(x, y, n, color){
+  if(particles.length > 320) return;
+  for(let i=0;i<n;i++){
+    const a = Math.random() * Math.PI * 2;
+    const s = 1 + Math.random() * 4;
+    particles.push({
+      x, y,
+      vx: Math.cos(a) * s,
+      vy: Math.sin(a) * s - 1,
+      life: 20 + Math.random() * 22,
+      max: 42,
+      color
+    });
+  }
+}
+function updateParticles(){
+  for(let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.18; p.vx *= 0.98;
+    p.life--;
+    if(p.life <= 0) particles.splice(i,1);
+  }
+}
+
+/* ---------------- آسیب ---------------- */
+function hurtPlayer(amount){
+  const p = player;
+  if(p.invuln > 0) return;
+  state.hearts -= amount;
+  p.invuln = 85;
+  spawnParticles(p.x + p.w/2, p.y + p.h/2, 18, '#ff2d95');
+  updateHUD();
+  if(state.hearts <= 0){ loseLife(); }
+  else{ p.vy = -6; p.vx = -p.face * 4.5; }
+}
+function loseLife(){
+  state.deaths++;
+  state.score = levelStartScore;
+  spawnParticles(player.x + player.w/2, player.y + player.h/2, 30, '#ff2d95');
+  startLevel(state.level);
+}
+
+/* ---------------- آپدیت ---------------- */
+function update(){
+  const d = DIFFS[state.diff];
+  const p = player;
+
+  let mv = 0;
+  if(input.left)  mv -= 1;
+  if(input.right) mv += 1;
+
+  if(mv !== 0){ p.vx += mv * 0.9; p.face = mv; }
+  else{ p.vx *= 0.74; if(Math.abs(p.vx) < 0.06) p.vx = 0; }
+  p.vx = clamp(p.vx, -3.9, 3.9);
+
+  if(input.jumpPressed){ p.jumpBuf = 8; input.jumpPressed = false; }
+  if(p.jumpBuf > 0) p.jumpBuf--;
+  if(p.coyote > 0)  p.coyote--;
+
+  if(p.jumpBuf > 0 && (p.onGround || p.coyote > 0)){
+    p.vy = d.jump;
+    p.onGround = false;
+    p.coyote = 0; p.jumpBuf = 0;
+    p.jumping = true;
+    spawnParticles(p.x + p.w/2, p.y + p.h, 7, '#00e5ff');
+  }
+  if(p.jumping && !input.jump && p.vy < -4){ p.vy = -4; p.jumping = false; }
+  if(p.vy > 0) p.jumping = false;
+
+  p.vy += d.grav;
+  p.vy = Math.min(p.vy, 17);
+
+  moveEntity(p, level.plats);
+
+  if(p.onGround) p.coyote = 6;
+  if(p.x < 0){ p.x = 0; p.vx = 0; }
+  if(p.x + p.w > level.width){ p.x = level.width - p.w; p.vx = 0; }
+
+  if(p.y > H + 140){ state.hearts = 0; loseLife(); return; }
+  if(p.invuln > 0) p.invuln--;
+
+  if(p.fireCd > 0) p.fireCd--;
+  if(input.shoot && p.fireCd <= 0){
+    p.fireCd = d.fire;
+    bullets.push({
+      x: p.x + (p.face > 0 ? p.w : -12),
+      y: p.y + 22,
+      w: 14, h: 5,
+      vx: p.face * 9.5,
+      life: 95
+    });
+    spawnParticles(p.x + (p.face>0?p.w:-6), p.y+24, 3, '#00e5ff');
+  }
+
+  for(let i=bullets.length-1;i>=0;i--){
+    const b = bullets[i];
+    b.x += b.vx;
+    b.life--;
+    if(b.life <= 0 || b.x < -40 || b.x > level.width + 40){ bullets.splice(i,1); continue; }
+    let dead = false;
+    for(let j=0;j<level.enemies.length;j++){
+      const e = level.enemies[j];
+      if(!e.alive) continue;
+      if(aabb(b, e)){
+        e.alive = false;
+        state.score += 25;
+        spawnParticles(e.x + e.w/2, e.y + e.h/2, 14, '#ff2d95');
+        dead = true;
+        break;
+      }
+    }
+    if(!dead){
+      for(let j=0;j<level.plats.length;j++){
+        const pl = level.plats[j];
+        if(pl.kind === 'plat' && aabb(b, pl)){ dead = true; break; }
+      }
+    }
+    if(dead){
+      spawnParticles(b.x, b.y + 2, 4, '#00e5ff');
+      bullets.splice(i,1);
+    }
+  }
+
+  for(let i=0;i<level.enemies.length;i++){
+    const e = level.enemies[i];
+    if(!e.alive) continue;
+    e.t += 0.06;
+    e.x += e.dir * e.spd;
+    if(e.x < e.minX){ e.x = e.minX; e.dir = 1; }
+    if(e.x + e.w > e.maxX){ e.x = e.maxX - e.w; e.dir = -1; }
+
+    if(p.invuln <= 0 && aabb(p, e)){
+      if(p.vy > 1 && (p.y + p.h) - e.y < 24){
+        e.alive = false;
+        p.vy = -9.5;
+        state.score += 25;
+        spawnParticles(e.x + e.w/2, e.y, 14, '#ff2d95');
+      }else{
+        hurtPlayer(1);
+        if(state.screen !== 'playing') return;
+      }
+    }
+  }
+
+  for(let i=0;i<level.coins.length;i++){
+    const c = level.coins[i];
+    if(c.got) continue;
+    c.t += 0.05;
+    const box = { x: c.x - c.r, y: c.y - c.r, w: c.r*2, h: c.r*2 };
+    if(aabb(p, box)){
+      c.got = true;
+      state.score += 10;
+      spawnParticles(c.x, c.y, 8, '#ffe600');
+    }
+  }
+
+  if(aabb(p, level.portal)){ completeLevel(); return; }
+
+  const targetX = clamp(p.x + p.w/2 - W/2, 0, Math.max(0, level.width - W));
+  camera.x = lerp(camera.x, targetX, 0.16);
+
+  updateParticles();
+  if(frame % 6 === 0) updateHUD();
+}
+
+/* ---------------- پایان مرحله ---------------- */
+function completeLevel(){
+  const bonus = 100 + Math.max(0, state.hearts) * 50;
+  state.score += bonus;
+
+  if(state.level >= MAX_LEVEL){
+    saveGame(MAX_LEVEL);
+    state.screen = 'victory';
+    document.getElementById('vic-score').textContent = state.score;
+    document.getElementById('vic-deaths').textContent = state.deaths;
+    showScreen('victory');
+  }else{
+    saveGame(state.level + 1);
+    state.screen = 'complete';
+    document.getElementById('cmp-level').textContent = state.level;
+    document.getElementById('cmp-score').textContent = state.score;
+    showScreen('complete');
+  }
+  updateHUD();
+}
+
+/* =========================================================
+   رسم صحنه
+   ========================================================= */
+
+function drawPlatforms(){
+  const camL = camera.x - 60;
+  const camR = camera.x + W + 60;
+
+  for(let i=0;i<level.plats.length;i++){
+    const pl = level.plats[i];
+    if(pl.x + pl.w < camL || pl.x > camR) continue;
+
+    if(pl.kind === 'ground'){
+      ctx.fillStyle = '#0a0718';
+      ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
+
+      // شبکه‌ی سایبری روی زمین
+      ctx.strokeStyle = 'rgba(0,229,255,0.13)';
+      ctx.lineWidth = 1;
+      const gs = 30;
+      const gx0 = Math.ceil(pl.x / gs) * gs;
+      for(let gx = gx0; gx < pl.x + pl.w; gx += gs){
+        ctx.beginPath();
+        ctx.moveTo(gx, pl.y);
+        ctx.lineTo(gx, pl.y + pl.h);
+        ctx.stroke();
+      }
+      for(let gy = pl.y + 15; gy < pl.y + pl.h; gy += 15){
+        ctx.beginPath();
+        ctx.moveTo(pl.x, gy);
+        ctx.lineTo(pl.x + pl.w, gy);
+        ctx.stroke();
+      }
+
+      // لبه‌ی نئونی
+      ctx.save();
+      ctx.shadowColor = '#00e5ff';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = 'rgba(0,229,255,0.95)';
+      ctx.fillRect(pl.x, pl.y - 2, pl.w, 3);
+      ctx.restore();
+
+    }else{
+      ctx.fillStyle = '#120a20';
+      ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
+
+      ctx.save();
+      ctx.shadowColor = '#ff2d95';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = 'rgba(255,45,149,0.95)';
+      ctx.fillRect(pl.x, pl.y - 2, pl.w, 3);
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(255,45,149,0.15)';
+      ctx.fillRect(pl.x, pl.y + pl.h - 3, pl.w, 3);
+    }
+  }
+}
+
+function drawCoins(){
+  const camL = camera.x - 50;
+  const camR = camera.x + W + 50;
+  for(let i=0;i<level.coins.length;i++){
+    const c = level.coins[i];
+    if(c.got) continue;
+    if(c.x < camL || c.x > camR) continue;
+
+    const sc = Math.abs(Math.cos(c.t * 1.4 + frame * 0.045));
+    ctx.save();
+    ctx.shadowColor = '#ffe600';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ffe600';
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, c.r * (0.28 + 0.72 * sc), c.r, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(c.x, c.y, c.r * 0.18 * sc, c.r * 0.36, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawPortal(){
+  const pt = level.portal;
+  const pulse = 0.5 + 0.5 * Math.sin(frame * 0.08);
+
+  ctx.save();
+  ctx.shadowColor = '#39ff14';
+  ctx.shadowBlur = 22 + pulse * 22;
+  ctx.strokeStyle = '#39ff14';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.ellipse(pt.x + pt.w/2, pt.y + pt.h/2, pt.w/2, pt.h/2, 0, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+
+  const g = ctx.createRadialGradient(
+    pt.x + pt.w/2, pt.y + pt.h/2, 2,
+    pt.x + pt.w/2, pt.y + pt.h/2, pt.w/2 + 6
+  );
+  g.addColorStop(0, 'rgba(57,255,20,' + (0.35 + pulse * 0.35) + ')');
+  g.addColorStop(1, 'rgba(57,255,20,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.ellipse(pt.x + pt.w/2, pt.y + pt.h/2, pt.w/2 + 6, pt.h/2 + 6, 0, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawEnemies(){
+  const camL = camera.x - 60;
+  const camR = camera.x + W + 60;
+  for(let i=0;i<level.enemies.length;i++){
+    const e = level.enemies[i];
+    if(!e.alive) continue;
+    if(e.x + e.w < camL || e.x > camR) continue;
+
+    const bob = Math.sin(e.t * 2.2) * 2;
+    const cx = e.x + e.w/2;
+    const cy = e.y + e.h/2 + bob;
+
+    ctx.save();
+    ctx.shadowColor = '#ff2d95';
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = '#ff2d95';
+    ctx.beginPath();
+    ctx.moveTo(cx,        e.y + bob);
+    ctx.lineTo(e.x + e.w, cy);
+    ctx.lineTo(cx,        e.y + e.h + bob);
+    ctx.lineTo(e.x,       cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = '#1c0512';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5.5, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffe600';
+    ctx.beginPath();
+    ctx.arc(cx + e.dir * 3.5, cy, 2.2, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawBullets(){
+  ctx.save();
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur = 16;
+  ctx.fillStyle = '#b8fbff';
+  for(let i=0;i<bullets.length;i++){
+    const b = bullets[i];
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+  }
+  ctx.restore();
+
+  ctx.fillStyle = 'rgba(0,229,255,0.35)';
+  for(let i=0;i<bullets.length;i++){
+    const b = bullets[i];
+    const trail = b.vx > 0 ? b.x - 16 : b.x + b.w;
+    ctx.fillRect(trail, b.y + 1, 16, 3);
+  }
+}
+
+/* =========================================================
+   رسم شخصیت محسن (انسان‌نما)
+   ========================================================= */
+function drawPlayer(){
+  const p = player;
+  if(!p) return;
+  if(p.invuln > 0 && Math.floor(frame / 4) % 2 === 0) return;
+
+  const cx = p.x + p.w / 2;
+  const topY = p.y;
+  const botY = p.y + p.h;
+
+  const walking = Math.abs(p.vx) > 0.4 && p.onGround;
+  const phase = frame * 0.35;
+  const legSwing = walking ? Math.sin(phase) * 5 : 0;
+  const armSwing = walking ? Math.sin(phase + Math.PI) * 4 : 0;
+  const bob = walking ? Math.abs(Math.sin(phase)) * 1.2 : 0;
+
+  // سایه روی زمین
+  if(p.onGround){
+    ctx.fillStyle = 'rgba(0,229,255,0.18)';
+    ctx.beginPath();
+    ctx.ellipse(cx, botY + 3, 17, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.save();
+  ctx.translate(cx, topY + bob * 0.5);
+
+  // رنگ‌ها
+  const skin     = '#f0b98a';
+  const skinDark = '#d99a6b';
+  const suitDark = '#0a1a26';
+  const suitMid  = '#102232';
+  const suitEdge = '#0f2432';
+  const neon     = '#00e5ff';
+  const neonPink = '#ff2d95';
+
+  /* --- پاها --- */
+  // پای عقب
+  ctx.fillStyle = suitDark;
+  ctx.fillRect(-8 + legSwing * 0.4, 40, 7, 10);
+  // پای جلو
+  ctx.fillStyle = suitEdge;
+  ctx.fillRect(1 - legSwing * 0.4, 40, 7, 10);
+
+  // بوت‌ها
+  ctx.save();
+  ctx.shadowColor = neon;
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = neon;
+  ctx.fillRect(-9 + legSwing * 0.4, 49, 9, 3);
+  ctx.fillRect(0 - legSwing * 0.4, 49, 9, 3);
+  ctx.restore();
+
+  /* --- تنه --- */
+  ctx.fillStyle = suitMid;
+  ctx.fillRect(-10, 22, 20, 20);
+
+  // یقه / نوار بالای کاپشن
+  ctx.save();
+  ctx.shadowColor = neon;
+  ctx.shadowBlur = 7;
+  ctx.fillStyle = neon;
+  ctx.fillRect(-10, 22, 20, 2);
+  ctx.restore();
+
+  // خط وسط کاپشن
+  ctx.fillStyle = 'rgba(0,229,255,0.35)';
+  ctx.fillRect(-1, 24, 2, 17);
+
+  // هسته‌ی انرژی روی سینه
+  const pulse = 0.5 + 0.5 * Math.sin(frame * 0.15);
+  ctx.save();
+  ctx.shadowColor = neonPink;
+  ctx.shadowBlur = 12 + pulse * 10;
+  ctx.fillStyle = neonPink;
+  ctx.fillRect(-2.5, 29, 5, 5);
+  ctx.restore();
+
+  // خطوط تزئینی روی تنه
+  ctx.fillStyle = 'rgba(0,229,255,0.16)';
+  ctx.fillRect(-8, 26, 4, 1.5);
+  ctx.fillRect(-8, 34, 4, 1.5);
+  ctx.fillRect(4, 26, 4, 1.5);
+  ctx.fillRect(4, 34, 4, 1.5);
+
+  /* --- دست‌ها --- */
+  // بازوی عقب
+  ctx.fillStyle = suitDark;
+  ctx.fillRect(-13, 24 + armSwing * 0.3, 5, 14);
+  // بازوی جلو
+  ctx.fillStyle = suitEdge;
+  ctx.fillRect(8, 24 - armSwing * 0.3, 5, 14);
+
+  // دست‌ها
+  ctx.fillStyle = skin;
+  ctx.fillRect(-13, 37 + armSwing * 0.3, 5, 4);
+  ctx.fillRect(8, 37 - armSwing * 0.3, 5, 4);
+
+  // مچ‌بندهای نئونی
+  ctx.fillStyle = neon;
+  ctx.globalAlpha = 0.85;
+  ctx.fillRect(-13, 36 + armSwing * 0.3, 5, 1.5);
+  ctx.fillRect(8, 36 - armSwing * 0.3, 5, 1.5);
+  ctx.globalAlpha = 1;
+
+  /* --- گردن --- */
+  ctx.fillStyle = skinDark;
+  ctx.fillRect(-3.5, 18, 7, 5);
+
+  /* --- سر --- */
+  // صورت
+  ctx.fillStyle = skin;
+  ctx.beginPath();
+  ctx.arc(0, 12, 9, 0, Math.PI * 2);
+  ctx.fill();
+
+  // سایه‌ی زیرگونه
+  ctx.fillStyle = skinDark;
+  ctx.beginPath();
+  ctx.arc(0, 14, 7, 0.15, Math.PI - 0.15);
+  ctx.fill();
+
+  // مو
+  ctx.fillStyle = '#1a0f2e';
+  ctx.beginPath();
+  ctx.arc(0, 9.5, 9.6, Math.PI, Math.PI * 2);
+  ctx.fill();
+  // فرق موها
+  ctx.beginPath();
+  ctx.moveTo(-9, 9);
+  ctx.quadraticCurveTo(-11, 1, -3, 4);
+  ctx.lineTo(-3, 8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(9, 9);
+  ctx.quadraticCurveTo(11, 1, 3, 4);
+  ctx.lineTo(3, 8);
+  ctx.closePath();
+  ctx.fill();
+
+  /* --- وایزر نئونی (عینک سایبری) --- */
+  const faceDir = p.face;
+  const vx = faceDir > 0 ? 1 : -10;
+
+  ctx.save();
+  ctx.shadowColor = neon;
+  ctx.shadowBlur = 14 + pulse * 6;
+  ctx.fillStyle = neon;
+  ctx.fillRect(vx, 10, 9, 5);
+  ctx.restore();
+
+  // انعکاس روی وایزر
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillRect(vx + 1, 11, 3, 1.5);
+  ctx.fillRect(vx + 5, 12.5, 2, 1);
+
+  // خط دور وایزر
+  ctx.strokeStyle = 'rgba(0,229,255,0.5)';
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(vx - 0.5, 9.5, 10, 6);
+
+  /* --- دهان --- */
+  ctx.fillStyle = '#8a4a3a';
+  if(faceDir > 0) ctx.fillRect(3, 17, 3, 1.2);
+  else            ctx.fillRect(-6, 17, 3, 1.2);
+
+  /* --- هاله‌ی پرش --- */
+  if(!p.onGround && p.vy < 0){
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.25 * Math.sin(frame * 0.4);
+    ctx.shadowColor = neon;
+    ctx.shadowBlur = 22;
+    ctx.strokeStyle = neon;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 32, 15, 20, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+function drawParticles(){
+  for(let i=0;i<particles.length;i++){
+    const p = particles[i];
+    const a = Math.max(0, p.life / p.max);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawVignette(){
+  const g = ctx.createRadialGradient(W/2, H/2, H*0.35, W/2, H/2, H*0.95);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.62)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.globalAlpha = 0.055;
+  ctx.fillStyle = '#00e5ff';
+  for(let y=0;y<H;y+=3) ctx.fillRect(0, y, W, 1);
+  ctx.restore();
+}
+
+function draw(){
+  drawBackground();
+
+  if(level && state.screen !== 'menu'){
+    ctx.save();
+    ctx.translate(-Math.round(camera.x), 0);
+    drawPlatforms();
+    drawCoins();
+    drawPortal();
+    drawEnemies();
+    drawBullets();
+    drawPlayer();
+    drawParticles();
+    ctx.restore();
+  }else if(level && state.screen === 'menu'){
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.translate(-Math.round(camera.x), 0);
+    drawPlatforms();
+    ctx.restore();
+  }
+
+  drawVignette();
+}
+
+/* =========================================================
+   حلقه‌ی بازی
+   ========================================================= */
+let lastTs = 0;
+let acc = 0;
+const STEP = 1000 / 60;
+
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!lastTs) lastTs = ts;
+  let dt = ts - lastTs;
+  lastTs = ts;
+  if(dt > 200) dt = 200;
+
+  acc += dt;
+  let iter = 0;
+  while(acc >= STEP && iter < 5){
+    acc -= STEP; iter++;
+    if(state.screen === 'playing' && level && player) update();
+    frame++;
+  }
+  draw();
+}
+
+/* =========================================================
+   رابط کاربری
+   ========================================================= */
+const screens = {
+  menu     : document.getElementById('scr-menu'),
+  diff     : document.getElementById('scr-diff'),
+  help     : document.getElementById('scr-help'),
+  pause    : document.getElementById('scr-pause'),
+  complete : document.getElementById('scr-complete'),
+  victory  : document.getElementById('scr-victory')
+};
+const overlaysEl = document.getElementById('overlays');
+
+function showScreen(name){
+  for(const k in screens) screens[k].classList.remove('active');
+  if(name && screens[name]){
+    screens[name].classList.add('active');
+    overlaysEl.classList.add('show');
+  }else{
+    overlaysEl.classList.remove('show');
+  }
+}
+
+function updateHUD(){
+  document.getElementById('hudLevel').textContent  = state.level;
+  document.getElementById('hudScore').textContent  = state.score;
+  document.getElementById('hudDiff').textContent   = DIFFS[state.diff].name;
+  document.getElementById('hudDeaths').textContent = state.deaths;
+
+  const full = DIFFS[state.diff].hearts;
+  const cur  = clamp(state.hearts, 0, full);
+  document.getElementById('hudHearts').textContent = '♥'.repeat(cur) + '♡'.repeat(full - cur);
+}
+
+let toastTimer = null;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 1700);
+}
+
+function refreshMenu(){
+  const btn = document.getElementById('btn-continue');
+  const info = document.getElementById('menu-save-info');
+  const s = loadSave();
+
+  if(s){
+    btn.disabled = false;
+    info.innerHTML = 'ذخیره موجود: مرحله <b>' + s.level + '</b> — امتیاز <b>' + (s.score||0) +
+                     '</b> — سختی <b>' + (DIFFS[s.diff] ? DIFFS[s.diff].name : 'متوسط') + '</b>';
+  }else{
+    btn.disabled = true;
+    info.textContent = 'هنوز ذخیره‌ای وجود ندارد.';
+  }
+}
+
+/* ---------------- کیبورد ---------------- */
+window.addEventListener('keydown', function(e){
+  const c = e.code;
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].indexOf(c) !== -1){
+    e.preventDefault();
+  }
+  switch(c){
+    case 'ArrowLeft': case 'KeyA': input.left = true; break;
+    case 'ArrowRight': case 'KeyD': input.right = true; break;
+    case 'ArrowUp': case 'KeyW': case 'Space':
+      if(!input.jump) input.jumpPressed = true;
+      input.jump = true;
+      break;
+    case 'KeyX': case 'KeyJ': case 'ControlLeft': case 'ControlRight':
+      input.shoot = true; break;
+    case 'Escape': case 'KeyP':
+      togglePause();
+      break;
+  }
+}, { passive:false });
+
+window.addEventListener('keyup', function(e){
+  const c = e.code;
+  switch(c){
+    case 'ArrowLeft': case 'KeyA':  input.left = false;  break;
+    case 'ArrowRight': case 'KeyD': input.right = false; break;
+    case 'ArrowUp': case 'KeyW': case 'Space': input.jump = false; break;
+    case 'KeyX': case 'KeyJ': case 'ControlLeft': case 'ControlRight':
+      input.shoot = false; break;
+  }
+});
+
+window.addEventListener('blur', function(){
+  input.left = input.right = input.jump = input.shoot = false;
+});
+
+function togglePause(){
+  if(state.screen === 'playing'){
+    state.screen = 'paused';
+    showScreen('pause');
+  }else if(state.screen === 'paused'){
+    state.screen = 'playing';
+    showScreen(null);
+    lastTs = 0; acc = 0;
+  }
+}
+
+/* ---------------- دکمه‌ها ---------------- */
+let selectedDiff = 'normal';
+
+document.querySelectorAll('.diff-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    selectedDiff = btn.dataset.diff;
+    document.querySelectorAll('.diff-btn').forEach(function(b){
+      b.classList.toggle('sel', b === btn);
+    });
+    document.getElementById('diff-hint').textContent = DIFF_DESC[selectedDiff];
+  });
+});
+
+document.getElementById('btn-new').addEventListener('click', function(){
+  showScreen('diff');
+});
+
+document.getElementById('btn-continue').addEventListener('click', function(){
+  const s = loadSave();
+  if(!s) return;
+  state.diff   = (DIFFS[s.diff] ? s.diff : 'normal');
+  state.score  = s.score || 0;
+  state.deaths = s.deaths || 0;
+  startLevel(s.level || 1);
+});
+
+document.getElementById('btn-help').addEventListener('click', function(){
+  showScreen('help');
+});
+document.getElementById('btn-help-back').addEventListener('click', function(){
+  showScreen('menu'); refreshMenu();
+});
+document.getElementById('btn-diff-back').addEventListener('click', function(){
+  showScreen('menu'); refreshMenu();
+});
+document.getElementById('btn-diff-start').addEventListener('click', function(){
+  state.diff = selectedDiff;
+  state.score = 0;
+  state.deaths = 0;
+  startLevel(1);
+});
+
+document.getElementById('btn-resume').addEventListener('click', function(){
+  togglePause();
+});
+document.getElementById('btn-save').addEventListener('click', function(){
+  saveGame(state.level);
+  toast('بازی ذخیره شد ✓');
+});
+document.getElementById('btn-pause-menu').addEventListener('click', function(){
+  saveGame(state.level);
+  state.screen = 'menu';
+  level = null; player = null;
+  showScreen('menu');
+  refreshMenu();
+});
+
+document.getElementById('btn-next').addEventListener('click', function(){
+  startLevel(state.level + 1);
+});
+document.getElementById('btn-cmp-menu').addEventListener('click', function(){
+  state.screen = 'menu';
+  showScreen('menu');
+  refreshMenu();
+});
+document.getElementById('btn-vic-menu').addEventListener('click', function(){
+  state.screen = 'menu';
+  showScreen('menu');
+  refreshMenu();
+});
+
+/* ---------------- شروع ---------------- */
+initBackground();
+document.getElementById('diff-hint').textContent = DIFF_DESC[selectedDiff];
+refreshMenu();
+showScreen('menu');
+updateHUD();
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
