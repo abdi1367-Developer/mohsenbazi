@@ -2,32 +2,52 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05030c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>محسن ماریو | Mohsen Mario</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;}
-  body{
+
+  html,body{
+    height:100%;width:100%;
+    overflow:hidden;
     background:#05030c;
-    background-image:radial-gradient(circle at 50% -10%, #1d0b38 0%, #08040f 55%, #05030c 100%);
-    display:flex;align-items:center;justify-content:center;
     font-family:'Vazirmatn',Tahoma,system-ui,sans-serif;
-    color:#e8f9ff;overflow:hidden;
-    -webkit-font-smoothing:antialiased;
+    color:#e8f9ff;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    overscroll-behavior:none;
+  }
+
+  /* ---------- STAGE ---------- */
+  #stage{
+    position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  @media (orientation:portrait){
+    #stage{align-items:flex-start;padding-top:6vh;}
   }
 
   #wrap{
     position:relative;
-    width:min(96vw, calc(94vh * 16 / 9), 1120px);
-    aspect-ratio:16/9;
-    border-radius:14px;
-    box-shadow:0 0 0 1px rgba(0,229,255,.28),
-               0 0 40px rgba(0,229,255,.15),
-               0 0 90px rgba(255,45,149,.12);
+    width:min(100vw, calc(100vh * 16 / 9));
+    aspect-ratio:16 / 9;
+    max-width:100vw;
     overflow:hidden;
+    border-radius:12px;
+    box-shadow:
+      0 0 0 1px rgba(0,229,255,.28),
+      0 0 40px rgba(0,229,255,.15),
+      0 0 80px rgba(255,45,149,.12);
     background:#05030c;
   }
   canvas{display:block;width:100%;height:100%;}
@@ -36,74 +56,204 @@
   #hud{
     position:absolute;top:0;left:0;right:0;
     display:flex;justify-content:space-between;align-items:center;gap:8px;
-    padding:10px 16px;pointer-events:none;
-    font-size:clamp(.62rem,1.5vw,.95rem);
+    padding:8px 12px;pointer-events:none;
+    font-size:clamp(.7rem,2.2vw,1rem);
     font-weight:600;
     text-shadow:0 0 10px rgba(0,229,255,.85);
     letter-spacing:.3px;
     flex-wrap:wrap;
   }
-  #hud .grp{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
+  #hud .grp{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
   #hud .tag{color:#7fe9ff;opacity:.7;font-weight:400;}
   #hud .val{color:#fff;}
   #hud .hearts{color:#ff2d95;text-shadow:0 0 12px rgba(255,45,149,.9);letter-spacing:2px;}
   #hud .lvl{color:#ffe600;text-shadow:0 0 12px rgba(255,230,0,.8);}
 
-  /* ---------- overlays ---------- */
+  /* ---------- TOUCH CONTROLS ---------- */
+  #touch-controls{
+    position:fixed;inset:0;
+    pointer-events:none;
+    z-index:60;
+    display:none;
+  }
+  #touch-controls.show{display:block;}
+  #touch-controls > *{pointer-events:auto;}
+
+  /* Joystick */
+  #joystick{
+    position:absolute;
+    bottom:calc(20px + env(safe-area-inset-bottom,0px));
+    left:calc(20px + env(safe-area-inset-left,0px));
+    width:132px;height:132px;
+    border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(0,229,255,.08), rgba(0,229,255,.02) 60%, transparent 75%);
+    border:2px solid rgba(0,229,255,.42);
+    box-shadow:
+      0 0 26px rgba(0,229,255,.32),
+      inset 0 0 26px rgba(0,229,255,.12);
+    -webkit-backdrop-filter:blur(4px);
+    backdrop-filter:blur(4px);
+    touch-action:none;
+    transform:translateZ(0);
+    will-change:transform;
+  }
+  /* حلقه‌ی داخلی برای dead zone */
+  #joystick::before{
+    content:'';
+    position:absolute;
+    inset:26%;
+    border-radius:50%;
+    border:1px dashed rgba(0,229,255,.22);
+    pointer-events:none;
+  }
+  #stick-knob{
+    position:absolute;
+    top:50%;left:50%;
+    width:60px;height:60px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #b8fbff 0%, #00e5ff 40%, #007a99 100%);
+    box-shadow:
+      0 0 22px #00e5ff,
+      0 0 44px rgba(0,229,255,.55),
+      inset 0 0 14px rgba(255,255,255,.35);
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    will-change:transform;
+  }
+  #stick-knob::after{
+    content:'';
+    position:absolute;
+    top:50%;left:50%;
+    width:8px;height:8px;border-radius:50%;
+    background:rgba(0,40,60,.75);
+    transform:translate(-50%,-50%);
+    box-shadow:inset 0 0 4px #001a26;
+  }
+
+  /* Buttons */
+  .action-btn{
+    position:absolute;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;
+    font-family:inherit;font-weight:800;
+    color:#fff;letter-spacing:.5px;
+    touch-action:none;
+    cursor:pointer;
+    transform:translateZ(0);
+    will-change:transform,filter;
+    transition:transform .07s ease, filter .07s ease;
+    user-select:none;-webkit-user-select:none;
+  }
+  #btn-jump{
+    bottom:calc(28px + env(safe-area-inset-bottom,0px));
+    right:calc(26px + env(safe-area-inset-right,0px));
+    width:104px;height:104px;
+    font-size:16px;
+    background:radial-gradient(circle at 32% 28%,
+      rgba(255,140,200,.65) 0%,
+      rgba(255,45,149,.42) 55%,
+      rgba(120,10,70,.5) 100%);
+    border:2.5px solid rgba(255,45,149,.9);
+    box-shadow:
+      0 0 28px rgba(255,45,149,.6),
+      0 0 60px rgba(255,45,149,.28),
+      inset 0 0 22px rgba(255,45,149,.3);
+    text-shadow:0 0 12px rgba(255,45,149,1);
+  }
+  #btn-shoot{
+    bottom:calc(146px + env(safe-area-inset-bottom,0px));
+    right:calc(40px + env(safe-area-inset-right,0px));
+    width:82px;height:82px;
+    font-size:13px;
+    background:radial-gradient(circle at 32% 28%,
+      rgba(160,245,255,.65) 0%,
+      rgba(0,229,255,.42) 55%,
+      rgba(0,80,110,.5) 100%);
+    border:2.5px solid rgba(0,229,255,.9);
+    box-shadow:
+      0 0 28px rgba(0,229,255,.6),
+      0 0 60px rgba(0,229,255,.28),
+      inset 0 0 22px rgba(0,229,255,.3);
+    text-shadow:0 0 12px rgba(0,229,255,1);
+  }
+  .action-btn.active{
+    transform:translateZ(0) scale(.9);
+    filter:brightness(1.6) saturate(1.4);
+  }
+
+  @media (pointer:fine){
+    #joystick{width:118px;height:118px;}
+    #stick-knob{width:54px;height:54px;}
+    #btn-jump{width:88px;height:88px;font-size:14px;}
+    #btn-shoot{width:70px;height:70px;font-size:12px;bottom:calc(128px + env(safe-area-inset-bottom,0px));}
+  }
+
+  /* ---------- OVERLAYS ---------- */
   #overlays{
-    position:absolute;inset:0;display:none;
+    position:fixed;inset:0;display:none;
     align-items:center;justify-content:center;
-    background:rgba(5,3,12,.74);
-    -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+    background:rgba(5,3,12,.82);
+    -webkit-backdrop-filter:blur(9px);
+    backdrop-filter:blur(9px);
+    z-index:100;
+    overflow-y:auto;
+    padding:16px;
+    box-sizing:border-box;
   }
   #overlays.show{display:flex;}
 
   .screen{
     display:none;flex-direction:column;align-items:center;text-align:center;
-    padding:26px;width:92%;max-width:560px;
+    padding:22px;width:100%;max-width:540px;
     animation:fadeIn .22s ease;
+    margin:auto;
   }
   .screen.active{display:flex;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 
   .title{
-    font-size:clamp(2rem,6.5vw,3.4rem);
+    font-size:clamp(1.8rem,7vw,3.4rem);
     font-weight:900;
     letter-spacing:2px;
     color:#fff;
     text-shadow:0 0 12px #00e5ff,0 0 34px #00e5ff,0 0 70px rgba(0,229,255,.5);
     line-height:1.15;
   }
-  .title.small{font-size:clamp(1.3rem,4.5vw,2rem);text-shadow:0 0 12px #ff2d95,0 0 34px rgba(255,45,149,.55);}
+  .title.small{
+    font-size:clamp(1.2rem,5vw,2rem);
+    text-shadow:0 0 12px #ff2d95,0 0 34px rgba(255,45,149,.55);
+  }
   .sub{
-    margin-top:8px;font-size:clamp(.6rem,1.8vw,.78rem);
+    margin-top:8px;font-size:clamp(.6rem,2vw,.78rem);
     letter-spacing:4px;color:#ff2d95;opacity:.85;font-weight:600;
     text-shadow:0 0 12px rgba(255,45,149,.8);
   }
   .hint{
-    margin-top:16px;font-size:clamp(.7rem,2vw,.9rem);
-    color:#9ad9ea;line-height:2;opacity:.9;
+    margin-top:14px;font-size:clamp(.72rem,2.3vw,.9rem);
+    color:#9ad9ea;line-height:1.9;opacity:.92;
   }
   .hint b{color:#00e5ff;font-weight:700;}
 
-  .btns{width:100%;max-width:340px;margin-top:22px;}
+  .btns{width:100%;max-width:340px;margin-top:18px;}
   .btn{
     display:block;width:100%;
-    padding:12px 18px;margin:9px 0;
+    padding:12px 18px;margin:8px 0;
     background:rgba(0,229,255,.06);
     border:1px solid rgba(0,229,255,.45);
     color:#a9f0ff;border-radius:9px;
     font-family:inherit;font-weight:600;
-    font-size:clamp(.8rem,2.2vw,1rem);
+    font-size:clamp(.82rem,2.4vw,1rem);
     cursor:pointer;transition:all .16s ease;
     letter-spacing:.5px;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
   }
   .btn:hover:not(:disabled){
     background:rgba(0,229,255,.18);color:#fff;
     box-shadow:0 0 20px rgba(0,229,255,.5);
-    transform:translateY(-1px);
   }
-  .btn:active:not(:disabled){transform:translateY(0);}
+  .btn:active:not(:disabled){transform:scale(.98);}
   .btn.primary{
     border-color:rgba(255,45,149,.65);
     color:#ffb6dd;background:rgba(255,45,149,.09);
@@ -114,15 +264,18 @@
   }
   .btn:disabled{opacity:.3;cursor:not-allowed;}
 
-  .diff-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;justify-content:center;}
+  .diff-row{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center;}
   .diff-btn{
-    padding:14px 26px;border-radius:10px;cursor:pointer;
-    font-family:inherit;font-weight:700;font-size:clamp(.8rem,2.2vw,1rem);
+    padding:12px 22px;border-radius:10px;cursor:pointer;
+    font-family:inherit;font-weight:700;
+    font-size:clamp(.82rem,2.4vw,1rem);
     background:rgba(255,255,255,.03);
     border:1px solid rgba(255,255,255,.18);
     color:#c9d8e0;transition:all .16s ease;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
   }
-  .diff-btn:hover{border-color:rgba(0,229,255,.6);color:#fff;}
+  .diff-btn:active{transform:scale(.97);}
   .diff-btn.sel{
     border-color:#00e5ff;color:#fff;background:rgba(0,229,255,.16);
     box-shadow:0 0 22px rgba(0,229,255,.5),inset 0 0 18px rgba(0,229,255,.12);
@@ -132,151 +285,179 @@
     box-shadow:0 0 22px rgba(255,45,149,.55),inset 0 0 18px rgba(255,45,149,.12);
   }
 
-  .stats{
-    display:flex;gap:26px;margin-top:20px;flex-wrap:wrap;justify-content:center;
-  }
+  .stats{display:flex;gap:26px;margin-top:18px;flex-wrap:wrap;justify-content:center;}
   .stat{display:flex;flex-direction:column;gap:4px;}
   .stat .k{font-size:.72rem;color:#7fa8b8;letter-spacing:1px;}
-  .stat .v{font-size:1.5rem;font-weight:800;color:#ffe600;text-shadow:0 0 16px rgba(255,230,0,.7);}
+  .stat .v{font-size:1.4rem;font-weight:800;color:#ffe600;text-shadow:0 0 16px rgba(255,230,0,.7);}
   .stat .v.cy{color:#00e5ff;text-shadow:0 0 16px rgba(0,229,255,.8);}
 
   .keyrow{
     display:flex;justify-content:space-between;align-items:center;gap:14px;
-    width:100%;padding:9px 4px;border-bottom:1px dashed rgba(0,229,255,.15);
-    font-size:clamp(.7rem,2vw,.88rem);
+    width:100%;padding:9px 4px;
+    border-bottom:1px dashed rgba(0,229,255,.15);
+    font-size:clamp(.72rem,2.2vw,.9rem);
   }
   .keyrow:last-child{border-bottom:none;}
   .keyrow .k{color:#9ad9ea;}
   .keys{display:flex;gap:6px;flex-wrap:wrap;}
   kbd{
     background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.45);
-    border-radius:6px;padding:3px 9px;font-family:inherit;font-size:.78em;
+    border-radius:6px;padding:3px 8px;font-family:inherit;font-size:.78em;
     color:#bff4ff;box-shadow:0 0 10px rgba(0,229,255,.2);
   }
 
   #toast{
-    position:absolute;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
-    background:rgba(0,229,255,.12);border:1px solid rgba(0,229,255,.55);
-    color:#c9f7ff;padding:9px 22px;border-radius:30px;font-size:.82rem;font-weight:600;
+    position:fixed;
+    bottom:calc(40px + env(safe-area-inset-bottom,0px));
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:rgba(0,229,255,.14);
+    border:1px solid rgba(0,229,255,.55);
+    color:#c9f7ff;padding:9px 22px;
+    border-radius:30px;font-size:.84rem;font-weight:600;
     opacity:0;transition:all .3s ease;pointer-events:none;
     box-shadow:0 0 24px rgba(0,229,255,.35);
+    z-index:200;
+    max-width:90vw;
+    text-align:center;
   }
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* کوچک‌تر در نمایشگرهای بسیار کوچک */
+  @media (max-height:420px) and (orientation:landscape){
+    #joystick{width:104px;height:104px;}
+    #stick-knob{width:48px;height:48px;}
+    #btn-jump{width:80px;height:80px;font-size:13px;bottom:18px;right:18px;}
+    #btn-shoot{width:64px;height:64px;font-size:11px;bottom:108px;right:26px;}
+  }
 </style>
 </head>
 <body>
 
-<div id="wrap">
-  <canvas id="game" width="960" height="540"></canvas>
-
-  <!-- ======= HUD ======= -->
-  <div id="hud">
-    <div class="grp">
-      <span><span class="tag">مرحله</span> <span class="val lvl" id="hudLevel">1</span><span class="tag">/10</span></span>
-      <span><span class="tag">امتیاز</span> <span class="val" id="hudScore">0</span></span>
-    </div>
-    <div class="grp">
-      <span><span class="tag">سختی</span> <span class="val" id="hudDiff">متوسط</span></span>
-      <span><span class="tag">مرگ</span> <span class="val" id="hudDeaths">0</span></span>
-      <span class="hearts" id="hudHearts">♥♥♥</span>
+<!-- ============ STAGE ============ -->
+<div id="stage">
+  <div id="wrap">
+    <canvas id="game" width="960" height="540"></canvas>
+    <div id="hud">
+      <div class="grp">
+        <span><span class="tag">مرحله</span> <span class="val lvl" id="hudLevel">1</span><span class="tag">/10</span></span>
+        <span><span class="tag">امتیاز</span> <span class="val" id="hudScore">0</span></span>
+      </div>
+      <div class="grp">
+        <span><span class="tag">سختی</span> <span class="val" id="hudDiff">متوسط</span></span>
+        <span><span class="tag">مرگ</span> <span class="val" id="hudDeaths">0</span></span>
+        <span class="hearts" id="hudHearts">♥♥♥</span>
+      </div>
     </div>
   </div>
-
-  <!-- ======= OVERLAYS ======= -->
-  <div id="overlays">
-
-    <div class="screen" id="scr-menu">
-      <h1 class="title">محسن ماریو</h1>
-      <p class="sub">MOHSEN MARIO // 10 LEVELS</p>
-      <div class="btns">
-        <button class="btn primary" id="btn-new">شروع بازی جدید</button>
-        <button class="btn" id="btn-continue">ادامه بازی</button>
-        <button class="btn" id="btn-help">راهنما و کنترل‌ها</button>
-      </div>
-      <p class="hint" id="menu-save-info"></p>
-    </div>
-
-    <div class="screen" id="scr-diff">
-      <h2 class="title small">درجه سختی</h2>
-      <div class="diff-row">
-        <button class="diff-btn" data-diff="easy">آسان</button>
-        <button class="diff-btn sel" data-diff="normal">متوسط</button>
-        <button class="diff-btn" data-diff="hard">سخت</button>
-      </div>
-      <p class="hint" id="diff-hint"></p>
-      <div class="btns">
-        <button class="btn primary" id="btn-diff-start">شروع مأموریت</button>
-        <button class="btn" id="btn-diff-back">بازگشت</button>
-      </div>
-    </div>
-
-    <div class="screen" id="scr-help">
-      <h2 class="title small">کنترل‌ها</h2>
-      <div style="width:100%;margin-top:18px;">
-        <div class="keyrow"><span class="k">حرکت به چپ و راست</span>
-          <span class="keys"><kbd>◀</kbd><kbd>▶</kbd><kbd>A</kbd><kbd>D</kbd></span></div>
-        <div class="keyrow"><span class="k">پرش</span>
-          <span class="keys"><kbd>Space</kbd><kbd>▲</kbd><kbd>W</kbd></span></div>
-        <div class="keyrow"><span class="k">شلیک</span>
-          <span class="keys"><kbd>X</kbd><kbd>J</kbd><kbd>Ctrl</kbd></span></div>
-        <div class="keyrow"><span class="k">توقف / منو</span>
-          <span class="keys"><kbd>Esc</kbd><kbd>P</kbd></span></div>
-      </div>
-      <p class="hint">
-        روی سر دشمن‌ها بپر یا با شلیک نابودشان کن.<br>
-        تراشه‌های زرد (<b>◆</b>) را جمع کن و به <b>دروازه سبز</b> برس.
-      </p>
-      <div class="btns">
-        <button class="btn primary" id="btn-help-back">بازگشت</button>
-      </div>
-    </div>
-
-    <div class="screen" id="scr-pause">
-      <h2 class="title small">توقف</h2>
-      <p class="hint">بازی متوقف شده است.</p>
-      <div class="btns">
-        <button class="btn primary" id="btn-resume">ادامه بازی</button>
-        <button class="btn" id="btn-save">ذخیره بازی</button>
-        <button class="btn" id="btn-pause-menu">بازگشت به منوی اصلی</button>
-      </div>
-    </div>
-
-    <div class="screen" id="scr-complete">
-      <h2 class="title small">مرحله کامل شد</h2>
-      <div class="stats">
-        <div class="stat"><span class="k">مرحله</span><span class="v cy" id="cmp-level">1</span></div>
-        <div class="stat"><span class="k">امتیاز</span><span class="v" id="cmp-score">0</span></div>
-      </div>
-      <div class="btns">
-        <button class="btn primary" id="btn-next">مرحله بعد</button>
-        <button class="btn" id="btn-cmp-menu">منوی اصلی</button>
-      </div>
-    </div>
-
-    <div class="screen" id="scr-victory">
-      <h1 class="title">پیروزی!</h1>
-      <p class="sub">SYSTEM HACKED // ALL 10 LEVELS</p>
-      <div class="stats">
-        <div class="stat"><span class="k">امتیاز نهایی</span><span class="v" id="vic-score">0</span></div>
-        <div class="stat"><span class="k">تعداد مرگ</span><span class="v cy" id="vic-deaths">0</span></div>
-      </div>
-      <div class="btns">
-        <button class="btn primary" id="btn-vic-menu">بازگشت به منو</button>
-      </div>
-    </div>
-
-  </div>
-
-  <div id="toast"></div>
 </div>
+
+<!-- ============ TOUCH CONTROLS ============ -->
+<div id="touch-controls">
+  <div id="joystick" aria-label="جوی‌استیک حرکت">
+    <div id="stick-knob"></div>
+  </div>
+  <div id="btn-jump" class="action-btn" role="button" aria-label="پرش">پرش</div>
+  <div id="btn-shoot" class="action-btn" role="button" aria-label="شلیک">شلیک</div>
+</div>
+
+<!-- ============ OVERLAYS ============ -->
+<div id="overlays">
+
+  <div class="screen" id="scr-menu">
+    <h1 class="title">محسن ماریو</h1>
+    <p class="sub">MOHSEN MARIO // 10 LEVELS</p>
+    <div class="btns">
+      <button class="btn primary" id="btn-new">شروع بازی جدید</button>
+      <button class="btn" id="btn-continue">ادامه بازی</button>
+      <button class="btn" id="btn-help">راهنما و کنترل‌ها</button>
+    </div>
+    <p class="hint" id="menu-save-info"></p>
+  </div>
+
+  <div class="screen" id="scr-diff">
+    <h2 class="title small">درجه سختی</h2>
+    <div class="diff-row">
+      <button class="diff-btn" data-diff="easy">آسان</button>
+      <button class="diff-btn sel" data-diff="normal">متوسط</button>
+      <button class="diff-btn" data-diff="hard">سخت</button>
+    </div>
+    <p class="hint" id="diff-hint"></p>
+    <div class="btns">
+      <button class="btn primary" id="btn-diff-start">شروع مأموریت</button>
+      <button class="btn" id="btn-diff-back">بازگشت</button>
+    </div>
+  </div>
+
+  <div class="screen" id="scr-help">
+    <h2 class="title small">کنترل‌ها</h2>
+    <div style="width:100%;margin-top:14px;">
+      <div class="keyrow"><span class="k">حرکت (موبایل)</span>
+        <span class="keys"><kbd>جوی‌استیک</kbd></span></div>
+      <div class="keyrow"><span class="k">پرش (موبایل)</span>
+        <span class="keys"><kbd>دکمه پرش</kbd></span></div>
+      <div class="keyrow"><span class="k">شلیک (موبایل)</span>
+        <span class="keys"><kbd>دکمه شلیک</kbd></span></div>
+      <div class="keyrow"><span class="k">حرکت (کیبورد)</span>
+        <span class="keys"><kbd>◀</kbd><kbd>▶</kbd><kbd>A</kbd><kbd>D</kbd></span></div>
+      <div class="keyrow"><span class="k">پرش (کیبورد)</span>
+        <span class="keys"><kbd>Space</kbd><kbd>▲</kbd><kbd>W</kbd></span></div>
+      <div class="keyrow"><span class="k">شلیک (کیبورد)</span>
+        <span class="keys"><kbd>X</kbd><kbd>J</kbd><kbd>Ctrl</kbd></span></div>
+    </div>
+    <p class="hint">
+      روی سر دشمن‌ها بپر یا با شلیک نابودشان کن.<br>
+      تراشه‌های زرد (<b>◆</b>) را جمع کن و به <b>دروازه سبز</b> برس.
+    </p>
+    <div class="btns">
+      <button class="btn primary" id="btn-help-back">بازگشت</button>
+    </div>
+  </div>
+
+  <div class="screen" id="scr-pause">
+    <h2 class="title small">توقف</h2>
+    <p class="hint">بازی متوقف شده است.</p>
+    <div class="btns">
+      <button class="btn primary" id="btn-resume">ادامه بازی</button>
+      <button class="btn" id="btn-save">ذخیره بازی</button>
+      <button class="btn" id="btn-pause-menu">بازگشت به منوی اصلی</button>
+    </div>
+  </div>
+
+  <div class="screen" id="scr-complete">
+    <h2 class="title small">مرحله کامل شد</h2>
+    <div class="stats">
+      <div class="stat"><span class="k">مرحله</span><span class="v cy" id="cmp-level">1</span></div>
+      <div class="stat"><span class="k">امتیاز</span><span class="v" id="cmp-score">0</span></div>
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="btn-next">مرحله بعد</button>
+      <button class="btn" id="btn-cmp-menu">منوی اصلی</button>
+    </div>
+  </div>
+
+  <div class="screen" id="scr-victory">
+    <h1 class="title">پیروزی!</h1>
+    <p class="sub">SYSTEM HACKED // ALL 10 LEVELS</p>
+    <div class="stats">
+      <div class="stat"><span class="k">امتیاز نهایی</span><span class="v" id="vic-score">0</span></div>
+      <div class="stat"><span class="k">تعداد مرگ</span><span class="v cy" id="vic-deaths">0</span></div>
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="btn-vic-menu">بازگشت به منو</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
 
 <script>
 (function(){
 'use strict';
 
 /* =========================================================
-   محسن ماریو — پلتفرمر سایبرپانک
-   تک‌فایل: HTML + CSS + JS  (آماده دیپلوی روی Vercel)
+   محسن ماریو — پلتفرمر سایبرپانک موبایل-اول
    ========================================================= */
 
 /* ---------------- ابزارها ---------------- */
@@ -301,9 +482,15 @@ function aabb(a,b){
 
 /* ---------------- ثابت‌ها ---------------- */
 const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const W = canvas.width;
-const H = canvas.height;
+const ctx = canvas.getContext('2d', { alpha:false });
+
+// رزولوشن مرجع مجازی (منطق بازی روی این محورها اجرا می‌شود)
+const VW = 960, VH = 540;
+// این‌ها در طول بازی برای منطق استفاده می‌شوند
+let W = VW, H = VH;
+// ضریب زوم بر اساس عرض نمایشگر
+let zoom = 1;
+let canvasCssW = 960;
 
 const SAVE_KEY = 'mohsenmario_save_v1';
 
@@ -312,13 +499,11 @@ const DIFFS = {
   normal: { key:'normal', name:'متوسط', espd:1.25, ecount:1.00, grav:0.62, jump:-12.1, hearts:3, gap:100, fire:14 },
   hard:   { key:'hard',   name:'سخت',   espd:1.80, ecount:1.40, grav:0.68, jump:-11.8, hearts:2, gap:118, fire:17 }
 };
-
 const DIFF_DESC = {
   easy:   'دشمنان کندتر و کم‌تعداد، شکاف‌های کوتاه‌تر و قلب‌های بیشتر. مناسب شروع.',
   normal: 'تجربه‌ی متعادل؛ چالش واقعی سایبری.',
   hard:   'دشمنان سریع و پرتعداد، شکاف‌های بلند و فقط دو قلب. برای حرفه‌ای‌ها.'
 };
-
 const MAX_LEVEL = 10;
 
 /* ---------------- وضعیت بازی ---------------- */
@@ -342,37 +527,51 @@ let levelStartScore = 0;
 const input = { left:false, right:false, jump:false, jumpPressed:false, shoot:false };
 
 /* =========================================================
-   پس‌زمینه‌ی گرافیکی سایبرپانک (پارالاکس چندلایه)
+   اندازه‌گذاری / زوم
    ========================================================= */
-const bg = {
-  stars: [],
-  layers: [],
-  cars: [],
-  inited: false
-};
+function resizeCanvas(){
+  const wrap = document.getElementById('wrap');
+  const rect = wrap.getBoundingClientRect();
+  const cssW = Math.max(1, rect.width);
+  canvasCssW = cssW;
+
+  // زوم: در عرض‌های کوچک بزرگ‌تر، در عرض‌های بزرگ = 1
+  zoom = clamp(VW / (cssW * 1.55), 1, 1.9);
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cw = Math.max(2, Math.round(rect.width  * dpr));
+  const ch = Math.max(2, Math.round(rect.height * dpr));
+  if(canvas.width !== cw || canvas.height !== ch){
+    canvas.width  = cw;
+    canvas.height = ch;
+  }
+}
+
+/* =========================================================
+   پس‌زمینه‌ی گرافیکی سایبرپانک
+   ========================================================= */
+const bg = { stars:[], layers:[], cars:[], inited:false };
 
 function initBackground(){
   if(bg.inited) return;
 
-  // ستاره‌ها
-  for(let i=0;i<140;i++){
+  for(let i=0;i<120;i++){
     bg.stars.push({
-      x: Math.random() * W,
-      y: Math.random() * H * 0.62,
+      x: Math.random() * VW,
+      y: Math.random() * VH * 0.62,
       r: Math.random() * 1.3 + 0.3,
       a: 0.25 + Math.random() * 0.75,
       tw: Math.random() * 6.28
     });
   }
 
-  // لایه‌های ساختمان
   const configs = [
-    { speed: 0.10, baseW: 135, minH: 90,  maxH: 210, color:'#070517', accent:'#7a00ff',
-      window:'rgba(122,0,255,0.42)', count: 70, hasAntenna:true, hasSign:false },
-    { speed: 0.26, baseW: 105, minH: 130, maxH: 275, color:'#0b0724', accent:'#ff2d95',
-      window:'rgba(255,45,149,0.42)', count: 70, hasAntenna:true, hasSign:true },
-    { speed: 0.50, baseW: 82,  minH: 95,  maxH: 205, color:'#100a30', accent:'#00e5ff',
-      window:'rgba(0,229,255,0.55)', count: 70, hasAntenna:true, hasSign:true }
+    { speed:0.10, baseW:132, minH:90,  maxH:210, color:'#070517', accent:'#7a00ff',
+      window:'rgba(122,0,255,0.42)', count:28, hasAntenna:true, hasSign:false },
+    { speed:0.26, baseW:106, minH:130, maxH:275, color:'#0b0724', accent:'#ff2d95',
+      window:'rgba(255,45,149,0.42)', count:30, hasAntenna:true, hasSign:true },
+    { speed:0.50, baseW:86,  minH:95,  maxH:205, color:'#100a30', accent:'#00e5ff',
+      window:'rgba(0,229,255,0.55)', count:36, hasAntenna:true, hasSign:true }
   ];
 
   configs.forEach(function(cfg, li){
@@ -391,8 +590,7 @@ function initBackground(){
         antenna: r1 > 0.62,
         antennaH: 14 + r4 * 22,
         sign: r3 > 0.62,
-        signColor: r3 > 0.86 ? '#ffe600' : (r3 > 0.74 ? '#ff2d95' : '#00e5ff'),
-        winSeed: r2
+        signColor: r3 > 0.86 ? '#ffe600' : (r3 > 0.74 ? '#ff2d95' : '#00e5ff')
       });
     }
     bg.layers.push({
@@ -406,10 +604,9 @@ function initBackground(){
     });
   });
 
-  // خودروهای پرنده
-  for(let i=0;i<7;i++){
+  for(let i=0;i<6;i++){
     bg.cars.push({
-      x: Math.random() * W,
+      x: Math.random() * VW,
       y: 50 + Math.random() * 220,
       spd: (Math.random() * 0.7 + 0.35) * (Math.random() < 0.5 ? 1 : -1),
       len: 22 + Math.random() * 34,
@@ -420,21 +617,18 @@ function initBackground(){
   bg.inited = true;
 }
 
-/* ------- ماه نئونی ------- */
 function drawMoon(){
-  const mx = W * 0.76;
+  const mx = VW * 0.76;
   const my = 128;
   const mr = 72;
 
-  // هاله
   const glow = ctx.createRadialGradient(mx, my, mr * 0.55, mx, my, mr * 3.1);
   glow.addColorStop(0,   'rgba(255,45,149,0.38)');
   glow.addColorStop(0.45,'rgba(122,0,255,0.16)');
   glow.addColorStop(1,   'rgba(122,0,255,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, H * 0.62);
+  ctx.fillRect(mx - mr*3.2, my - mr*3.2, mr*6.4, mr*6.4);
 
-  // بدنه
   const mg = ctx.createLinearGradient(mx, my - mr, mx, my + mr);
   mg.addColorStop(0,   '#ff7ec2');
   mg.addColorStop(0.45,'#ff2d95');
@@ -444,7 +638,6 @@ function drawMoon(){
   ctx.arc(mx, my, mr, 0, Math.PI * 2);
   ctx.fill();
 
-  // خطوط اسکن روی ماه
   ctx.save();
   ctx.beginPath();
   ctx.arc(mx, my, mr, 0, Math.PI * 2);
@@ -456,7 +649,6 @@ function drawMoon(){
   }
   ctx.restore();
 
-  // حلقه
   ctx.save();
   ctx.globalAlpha = 0.4;
   ctx.strokeStyle = '#00e5ff';
@@ -469,14 +661,13 @@ function drawMoon(){
   ctx.restore();
 }
 
-/* ------- لایه‌ی ساختمان‌ها ------- */
 function drawBuildingLayer(layer){
-  const horizonY = H - 70;
+  const horizonY = VH - 70;
   const totalW = layer.totalW;
   let baseOff = (-camera.x * layer.speed) % totalW;
   if(baseOff > 0) baseOff -= totalW;
 
-  const reps = Math.ceil(W / totalW) + 2;
+  const reps = Math.ceil(VW / totalW) + 2;
 
   for(let rep = 0; rep < reps; rep++){
     const repOff = baseOff + rep * totalW;
@@ -484,15 +675,13 @@ function drawBuildingLayer(layer){
     for(let i=0;i<layer.buildings.length;i++){
       const b = layer.buildings[i];
       const bx = b.x + repOff;
-      if(bx + b.w < -60 || bx > W + 60) continue;
+      if(bx + b.w < -60 || bx > VW + 60) continue;
 
       const by = horizonY - b.h;
 
-      // بدنه
       ctx.fillStyle = layer.color;
       ctx.fillRect(bx, by, b.w, b.h);
 
-      // لبه‌ی نئونی بالا
       ctx.save();
       ctx.shadowColor = layer.accent;
       ctx.shadowBlur = 9;
@@ -532,7 +721,6 @@ function drawBuildingLayer(layer){
         ctx.lineTo(ax, by - b.antennaH);
         ctx.stroke();
 
-        // چراغ چشمک‌زن
         const blink = (Math.sin(frame * 0.08 + b.seed * 0.7) + 1) * 0.5;
         ctx.globalAlpha = 0.35 + blink * 0.65;
         ctx.fillStyle = '#ff2d95';
@@ -561,17 +749,15 @@ function drawBuildingLayer(layer){
   }
 }
 
-/* ------- خودروهای پرنده ------- */
 function drawFlyingCars(){
   for(let i=0;i<bg.cars.length;i++){
     const c = bg.cars[i];
     c.x += c.spd;
-    if(c.x > W + 120) c.x = -120;
-    if(c.x < -120) c.x = W + 120;
+    if(c.x > VW + 120) c.x = -120;
+    if(c.x < -120) c.x = VW + 120;
 
     const dir = c.spd > 0 ? 1 : -1;
 
-    // دنباله
     const tg = ctx.createLinearGradient(c.x, c.y, c.x - dir * c.len, c.y);
     tg.addColorStop(0, c.color);
     tg.addColorStop(1, 'rgba(0,0,0,0)');
@@ -584,7 +770,6 @@ function drawFlyingCars(){
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // سر
     ctx.save();
     ctx.shadowColor = c.color;
     ctx.shadowBlur = 12;
@@ -596,16 +781,14 @@ function drawFlyingCars(){
   }
 }
 
-/* ------- پس‌زمینه‌ی کامل ------- */
 function drawBackground(){
-  // آسمان
-  const g = ctx.createLinearGradient(0, 0, 0, H);
+  const g = ctx.createLinearGradient(0, 0, 0, VH);
   g.addColorStop(0,    '#05020c');
   g.addColorStop(0.38, '#0d0520');
   g.addColorStop(0.72, '#1a0833');
   g.addColorStop(1,    '#2b0a3d');
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, VW, VH);
 
   // ستاره‌ها
   for(let i=0;i<bg.stars.length;i++){
@@ -617,35 +800,32 @@ function drawBackground(){
   }
   ctx.globalAlpha = 1;
 
-  // ماه
   drawMoon();
 
-  // مه افق
-  const horizonY = H - 70;
+  const horizonY = VH - 70;
   const fogG = ctx.createLinearGradient(0, horizonY - 150, 0, horizonY);
   fogG.addColorStop(0,   'rgba(255,45,149,0)');
   fogG.addColorStop(0.7, 'rgba(255,45,149,0.10)');
   fogG.addColorStop(1,   'rgba(0,229,255,0.18)');
   ctx.fillStyle = fogG;
-  ctx.fillRect(0, horizonY - 150, W, 150);
+  ctx.fillRect(0, horizonY - 150, VW, 150);
 
-  // لایه‌های ساختمان (عقب → جلو)
   for(let li=0; li<bg.layers.length; li++){
     drawBuildingLayer(bg.layers[li]);
   }
 
-  // خودروهای پرنده
   drawFlyingCars();
 
-  // غبار جوی روی لایه‌های دور
-  const hazeG = ctx.createLinearGradient(0, horizonY - 90, 0, H);
+  const hazeG = ctx.createLinearGradient(0, horizonY - 90, 0, VH);
   hazeG.addColorStop(0, 'rgba(10,3,20,0)');
   hazeG.addColorStop(1, 'rgba(10,3,20,0.45)');
   ctx.fillStyle = hazeG;
-  ctx.fillRect(0, horizonY - 90, W, 90);
+  ctx.fillRect(0, horizonY - 90, VW, 90);
 }
 
-/* ---------------- ذخیره‌سازی ---------------- */
+/* =========================================================
+   ذخیره‌سازی
+   ========================================================= */
 function saveGame(levelToSave){
   try{
     const data = {
@@ -667,12 +847,14 @@ function loadSave(){
   }catch(e){ return null; }
 }
 
-/* ---------------- ساخت مرحله ---------------- */
+/* =========================================================
+   ساخت مرحله
+   ========================================================= */
 function buildLevel(n){
   const d = DIFFS[state.diff];
   const rng = mulberry32(1337 + n * 7919);
   const width = 2600 + n * 280;
-  const groundY = H - 70;
+  const groundY = VH - 70;
 
   const segs = [];
   let cursor = 0;
@@ -777,6 +959,7 @@ function startLevel(n){
   state.screen = 'playing';
   showScreen(null);
   updateHUD();
+  updateTouchControls();
 }
 
 /* ---------------- برخورد ---------------- */
@@ -890,7 +1073,7 @@ function update(){
   if(p.x < 0){ p.x = 0; p.vx = 0; }
   if(p.x + p.w > level.width){ p.x = level.width - p.w; p.vx = 0; }
 
-  if(p.y > H + 140){ state.hearts = 0; loseLife(); return; }
+  if(p.y > VH + 160){ state.hearts = 0; loseLife(); return; }
   if(p.invuln > 0) p.invuln--;
 
   if(p.fireCd > 0) p.fireCd--;
@@ -970,7 +1153,9 @@ function update(){
 
   if(aabb(p, level.portal)){ completeLevel(); return; }
 
-  const targetX = clamp(p.x + p.w/2 - W/2, 0, Math.max(0, level.width - W));
+  // دوربین با توجه به زوم
+  const visibleW = VW / zoom;
+  const targetX = clamp(p.x + p.w/2 - visibleW/2, 0, Math.max(0, level.width - visibleW));
   camera.x = lerp(camera.x, targetX, 0.16);
 
   updateParticles();
@@ -996,15 +1181,16 @@ function completeLevel(){
     showScreen('complete');
   }
   updateHUD();
+  updateTouchControls();
 }
 
 /* =========================================================
-   رسم صحنه
+   رسم اجزای بازی
    ========================================================= */
-
 function drawPlatforms(){
-  const camL = camera.x - 60;
-  const camR = camera.x + W + 60;
+  const visW = VW / zoom;
+  const camL = camera.x - 80;
+  const camR = camera.x + visW + 80;
 
   for(let i=0;i<level.plats.length;i++){
     const pl = level.plats[i];
@@ -1014,32 +1200,23 @@ function drawPlatforms(){
       ctx.fillStyle = '#0a0718';
       ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
 
-      // شبکه‌ی سایبری روی زمین
       ctx.strokeStyle = 'rgba(0,229,255,0.13)';
       ctx.lineWidth = 1;
       const gs = 30;
       const gx0 = Math.ceil(pl.x / gs) * gs;
       for(let gx = gx0; gx < pl.x + pl.w; gx += gs){
-        ctx.beginPath();
-        ctx.moveTo(gx, pl.y);
-        ctx.lineTo(gx, pl.y + pl.h);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(gx, pl.y); ctx.lineTo(gx, pl.y + pl.h); ctx.stroke();
       }
       for(let gy = pl.y + 15; gy < pl.y + pl.h; gy += 15){
-        ctx.beginPath();
-        ctx.moveTo(pl.x, gy);
-        ctx.lineTo(pl.x + pl.w, gy);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pl.x, gy); ctx.lineTo(pl.x + pl.w, gy); ctx.stroke();
       }
 
-      // لبه‌ی نئونی
       ctx.save();
       ctx.shadowColor = '#00e5ff';
       ctx.shadowBlur = 14;
       ctx.fillStyle = 'rgba(0,229,255,0.95)';
       ctx.fillRect(pl.x, pl.y - 2, pl.w, 3);
       ctx.restore();
-
     }else{
       ctx.fillStyle = '#120a20';
       ctx.fillRect(pl.x, pl.y, pl.w, pl.h);
@@ -1058,8 +1235,9 @@ function drawPlatforms(){
 }
 
 function drawCoins(){
+  const visW = VW / zoom;
   const camL = camera.x - 50;
-  const camR = camera.x + W + 50;
+  const camR = camera.x + visW + 50;
   for(let i=0;i<level.coins.length;i++){
     const c = level.coins[i];
     if(c.got) continue;
@@ -1109,8 +1287,9 @@ function drawPortal(){
 }
 
 function drawEnemies(){
+  const visW = VW / zoom;
   const camL = camera.x - 60;
-  const camR = camera.x + W + 60;
+  const camR = camera.x + visW + 60;
   for(let i=0;i<level.enemies.length;i++){
     const e = level.enemies[i];
     if(!e.alive) continue;
@@ -1165,7 +1344,7 @@ function drawBullets(){
 }
 
 /* =========================================================
-   رسم شخصیت محسن (انسان‌نما)
+   شخصیت محسن (انسان‌نما)
    ========================================================= */
 function drawPlayer(){
   const p = player;
@@ -1182,7 +1361,6 @@ function drawPlayer(){
   const armSwing = walking ? Math.sin(phase + Math.PI) * 4 : 0;
   const bob = walking ? Math.abs(Math.sin(phase)) * 1.2 : 0;
 
-  // سایه روی زمین
   if(p.onGround){
     ctx.fillStyle = 'rgba(0,229,255,0.18)';
     ctx.beginPath();
@@ -1193,7 +1371,6 @@ function drawPlayer(){
   ctx.save();
   ctx.translate(cx, topY + bob * 0.5);
 
-  // رنگ‌ها
   const skin     = '#f0b98a';
   const skinDark = '#d99a6b';
   const suitDark = '#0a1a26';
@@ -1202,15 +1379,12 @@ function drawPlayer(){
   const neon     = '#00e5ff';
   const neonPink = '#ff2d95';
 
-  /* --- پاها --- */
-  // پای عقب
+  // پاها
   ctx.fillStyle = suitDark;
   ctx.fillRect(-8 + legSwing * 0.4, 40, 7, 10);
-  // پای جلو
   ctx.fillStyle = suitEdge;
   ctx.fillRect(1 - legSwing * 0.4, 40, 7, 10);
 
-  // بوت‌ها
   ctx.save();
   ctx.shadowColor = neon;
   ctx.shadowBlur = 8;
@@ -1219,11 +1393,10 @@ function drawPlayer(){
   ctx.fillRect(0 - legSwing * 0.4, 49, 9, 3);
   ctx.restore();
 
-  /* --- تنه --- */
+  // تنه
   ctx.fillStyle = suitMid;
   ctx.fillRect(-10, 22, 20, 20);
 
-  // یقه / نوار بالای کاپشن
   ctx.save();
   ctx.shadowColor = neon;
   ctx.shadowBlur = 7;
@@ -1231,11 +1404,9 @@ function drawPlayer(){
   ctx.fillRect(-10, 22, 20, 2);
   ctx.restore();
 
-  // خط وسط کاپشن
   ctx.fillStyle = 'rgba(0,229,255,0.35)';
   ctx.fillRect(-1, 24, 2, 17);
 
-  // هسته‌ی انرژی روی سینه
   const pulse = 0.5 + 0.5 * Math.sin(frame * 0.15);
   ctx.save();
   ctx.shadowColor = neonPink;
@@ -1244,45 +1415,38 @@ function drawPlayer(){
   ctx.fillRect(-2.5, 29, 5, 5);
   ctx.restore();
 
-  // خطوط تزئینی روی تنه
   ctx.fillStyle = 'rgba(0,229,255,0.16)';
   ctx.fillRect(-8, 26, 4, 1.5);
   ctx.fillRect(-8, 34, 4, 1.5);
   ctx.fillRect(4, 26, 4, 1.5);
   ctx.fillRect(4, 34, 4, 1.5);
 
-  /* --- دست‌ها --- */
-  // بازوی عقب
+  // دست‌ها
   ctx.fillStyle = suitDark;
   ctx.fillRect(-13, 24 + armSwing * 0.3, 5, 14);
-  // بازوی جلو
   ctx.fillStyle = suitEdge;
   ctx.fillRect(8, 24 - armSwing * 0.3, 5, 14);
 
-  // دست‌ها
   ctx.fillStyle = skin;
   ctx.fillRect(-13, 37 + armSwing * 0.3, 5, 4);
   ctx.fillRect(8, 37 - armSwing * 0.3, 5, 4);
 
-  // مچ‌بندهای نئونی
   ctx.fillStyle = neon;
   ctx.globalAlpha = 0.85;
   ctx.fillRect(-13, 36 + armSwing * 0.3, 5, 1.5);
   ctx.fillRect(8, 36 - armSwing * 0.3, 5, 1.5);
   ctx.globalAlpha = 1;
 
-  /* --- گردن --- */
+  // گردن
   ctx.fillStyle = skinDark;
   ctx.fillRect(-3.5, 18, 7, 5);
 
-  /* --- سر --- */
-  // صورت
+  // سر
   ctx.fillStyle = skin;
   ctx.beginPath();
   ctx.arc(0, 12, 9, 0, Math.PI * 2);
   ctx.fill();
 
-  // سایه‌ی زیرگونه
   ctx.fillStyle = skinDark;
   ctx.beginPath();
   ctx.arc(0, 14, 7, 0.15, Math.PI - 0.15);
@@ -1293,7 +1457,6 @@ function drawPlayer(){
   ctx.beginPath();
   ctx.arc(0, 9.5, 9.6, Math.PI, Math.PI * 2);
   ctx.fill();
-  // فرق موها
   ctx.beginPath();
   ctx.moveTo(-9, 9);
   ctx.quadraticCurveTo(-11, 1, -3, 4);
@@ -1307,7 +1470,7 @@ function drawPlayer(){
   ctx.closePath();
   ctx.fill();
 
-  /* --- وایزر نئونی (عینک سایبری) --- */
+  // وایزر
   const faceDir = p.face;
   const vx = faceDir > 0 ? 1 : -10;
 
@@ -1318,22 +1481,20 @@ function drawPlayer(){
   ctx.fillRect(vx, 10, 9, 5);
   ctx.restore();
 
-  // انعکاس روی وایزر
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.fillRect(vx + 1, 11, 3, 1.5);
   ctx.fillRect(vx + 5, 12.5, 2, 1);
 
-  // خط دور وایزر
   ctx.strokeStyle = 'rgba(0,229,255,0.5)';
   ctx.lineWidth = 0.8;
   ctx.strokeRect(vx - 0.5, 9.5, 10, 6);
 
-  /* --- دهان --- */
+  // دهان
   ctx.fillStyle = '#8a4a3a';
   if(faceDir > 0) ctx.fillRect(3, 17, 3, 1.2);
   else            ctx.fillRect(-6, 17, 3, 1.2);
 
-  /* --- هاله‌ی پرش --- */
+  // هاله‌ی پرش
   if(!p.onGround && p.vy < 0){
     ctx.save();
     ctx.globalAlpha = 0.35 + 0.25 * Math.sin(frame * 0.4);
@@ -1362,25 +1523,31 @@ function drawParticles(){
 }
 
 function drawVignette(){
-  const g = ctx.createRadialGradient(W/2, H/2, H*0.35, W/2, H/2, H*0.95);
+  const g = ctx.createRadialGradient(VW/2, VH/2, VH*0.35, VW/2, VH/2, VH*0.95);
   g.addColorStop(0, 'rgba(0,0,0,0)');
   g.addColorStop(1, 'rgba(0,0,0,0.62)');
   ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, VW, VH);
 
   ctx.save();
   ctx.globalAlpha = 0.055;
   ctx.fillStyle = '#00e5ff';
-  for(let y=0;y<H;y+=3) ctx.fillRect(0, y, W, 1);
+  for(let y=0;y<VH;y+=3) ctx.fillRect(0, y, VW, 1);
   ctx.restore();
 }
 
+/* ---------------- رسم کل ---------------- */
 function draw(){
+  // تنظیم ترانسفورم برای زوم
+  const sx = canvas.width  / (VW / zoom);
+  const sy = canvas.height / (VH / zoom);
+  ctx.setTransform(sx, 0, 0, sy, 0, 0);
+
   drawBackground();
 
   if(level && state.screen !== 'menu'){
     ctx.save();
-    ctx.translate(-Math.round(camera.x), 0);
+    ctx.translate(-camera.x, 0);
     drawPlatforms();
     drawCoins();
     drawPortal();
@@ -1392,7 +1559,7 @@ function draw(){
   }else if(level && state.screen === 'menu'){
     ctx.save();
     ctx.globalAlpha = 0.45;
-    ctx.translate(-Math.round(camera.x), 0);
+    ctx.translate(-camera.x, 0);
     drawPlatforms();
     ctx.restore();
   }
@@ -1436,6 +1603,7 @@ const screens = {
   victory  : document.getElementById('scr-victory')
 };
 const overlaysEl = document.getElementById('overlays');
+const controlsEl = document.getElementById('touch-controls');
 
 function showScreen(name){
   for(const k in screens) screens[k].classList.remove('active');
@@ -1444,6 +1612,18 @@ function showScreen(name){
     overlaysEl.classList.add('show');
   }else{
     overlaysEl.classList.remove('show');
+  }
+  updateTouchControls();
+}
+
+function updateTouchControls(){
+  if(state.screen === 'playing'){
+    controlsEl.classList.add('show');
+  }else{
+    controlsEl.classList.remove('show');
+    resetJoy();
+    input.left = false; input.right = false;
+    input.jump = false; input.shoot = false;
   }
 }
 
@@ -1471,7 +1651,6 @@ function refreshMenu(){
   const btn = document.getElementById('btn-continue');
   const info = document.getElementById('menu-save-info');
   const s = loadSave();
-
   if(s){
     btn.disabled = false;
     info.innerHTML = 'ذخیره موجود: مرحله <b>' + s.level + '</b> — امتیاز <b>' + (s.score||0) +
@@ -1482,7 +1661,151 @@ function refreshMenu(){
   }
 }
 
-/* ---------------- کیبورد ---------------- */
+/* =========================================================
+   جوی‌استیک
+   ========================================================= */
+const joy = {
+  el: document.getElementById('joystick'),
+  knob: document.getElementById('stick-knob'),
+  id: null,
+  cx: 0, cy: 0,
+  maxR: 52
+};
+
+function handleJoyMove(px, py){
+  let dx = px - joy.cx;
+  let dy = py - joy.cy;
+  const dist = Math.hypot(dx, dy);
+  const maxR = joy.maxR;
+
+  if(dist > maxR){
+    dx = dx / dist * maxR;
+    dy = dy / dist * maxR;
+  }
+
+  joy.knob.style.transform =
+    'translate(calc(-50% + ' + dx.toFixed(1) + 'px), calc(-50% + ' + dy.toFixed(1) + 'px))';
+
+  const nx = dx / maxR;
+  const dead = 0.22;
+  if(nx < -dead){ input.left = true; input.right = false; }
+  else if(nx > dead){ input.left = false; input.right = true; }
+  else{ input.left = false; input.right = false; }
+}
+
+function resetJoy(){
+  joy.knob.style.transform = 'translate(-50%, -50%)';
+  joy.id = null;
+  input.left = false;
+  input.right = false;
+}
+
+function joyDown(e){
+  if(joy.id !== null) return;
+  joy.id = e.pointerId;
+
+  const rect = joy.el.getBoundingClientRect();
+  joy.cx = rect.left + rect.width / 2;
+  joy.cy = rect.top  + rect.height / 2;
+  joy.maxR = rect.width * 0.33;
+
+  try{ joy.el.setPointerCapture(e.pointerId); }catch(_){}
+  handleJoyMove(e.clientX, e.clientY);
+}
+
+function joyMove(e){
+  if(e.pointerId !== joy.id) return;
+  e.preventDefault();
+  handleJoyMove(e.clientX, e.clientY);
+}
+
+function joyUp(e){
+  if(e.pointerId !== joy.id) return;
+  resetJoy();
+}
+
+joy.el.addEventListener('pointerdown', function(e){
+  e.preventDefault();
+  joyDown(e);
+});
+joy.el.addEventListener('pointermove', joyMove);
+joy.el.addEventListener('pointerup', joyUp);
+joy.el.addEventListener('pointercancel', joyUp);
+joy.el.addEventListener('lostpointercapture', joyUp);
+
+// Fallback: اگر pointerup خارج از عنصر رخ دهد
+['pointerup','pointercancel'].forEach(function(evName){
+  document.addEventListener(evName, function(e){
+    if(e.pointerId === joy.id) resetJoy();
+  });
+});
+
+// اگر صفحه از دسترس خارج شد
+window.addEventListener('blur', function(){
+  resetJoy();
+  input.jump = false; input.shoot = false;
+});
+
+/* =========================================================
+   دکمه‌های لمسی
+   ========================================================= */
+function setupButton(el, onDown, onUp){
+  let activeId = null;
+  let isDown = false;
+
+  function down(e){
+    if(activeId !== null) return;
+    activeId = e.pointerId;
+    isDown = true;
+    el.classList.add('active');
+    try{ el.setPointerCapture(e.pointerId); }catch(_){}
+    if(onDown) onDown();
+  }
+  function up(e){
+    if(e.pointerId !== activeId) return;
+    activeId = null;
+    if(!isDown) return;
+    isDown = false;
+    el.classList.remove('active');
+    if(onUp) onUp();
+  }
+
+  el.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    down(e);
+  });
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+  el.addEventListener('lostpointercapture', up);
+
+  // Fallback
+  ['pointerup','pointercancel'].forEach(function(evName){
+    document.addEventListener(evName, function(e){
+      if(e.pointerId === activeId) up(e);
+    });
+  });
+}
+
+setupButton(
+  document.getElementById('btn-jump'),
+  function(){
+    if(!input.jump) input.jumpPressed = true;
+    input.jump = true;
+  },
+  function(){
+    input.jump = false;
+  }
+);
+
+setupButton(
+  document.getElementById('btn-shoot'),
+  function(){ input.shoot = true; },
+  function(){ input.shoot = false; }
+);
+
+/* =========================================================
+   کیبورد (برای دسکتاپ)
+   ========================================================= */
 window.addEventListener('keydown', function(e){
   const c = e.code;
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].indexOf(c) !== -1){
@@ -1514,10 +1837,6 @@ window.addEventListener('keyup', function(e){
   }
 });
 
-window.addEventListener('blur', function(){
-  input.left = input.right = input.jump = input.shoot = false;
-});
-
 function togglePause(){
   if(state.screen === 'playing'){
     state.screen = 'paused';
@@ -1529,7 +1848,9 @@ function togglePause(){
   }
 }
 
-/* ---------------- دکمه‌ها ---------------- */
+/* =========================================================
+   رویدادهای دکمه‌های منو
+   ========================================================= */
 let selectedDiff = 'normal';
 
 document.querySelectorAll('.diff-btn').forEach(function(btn){
@@ -1600,12 +1921,31 @@ document.getElementById('btn-vic-menu').addEventListener('click', function(){
   refreshMenu();
 });
 
-/* ---------------- شروع ---------------- */
+/* =========================================================
+   راه‌اندازی
+   ========================================================= */
 initBackground();
+resizeCanvas();
 document.getElementById('diff-hint').textContent = DIFF_DESC[selectedDiff];
 refreshMenu();
 showScreen('menu');
 updateHUD();
+
+window.addEventListener('resize', function(){ resizeCanvas(); });
+window.addEventListener('orientationchange', function(){
+  setTimeout(resizeCanvas, 250);
+});
+
+// جلوگیری از زوم دوبار لمس روی iOS
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e){
+  const now = Date.now();
+  if(now - lastTouchEnd <= 300){ e.preventDefault(); }
+  lastTouchEnd = now;
+}, { passive:false });
+
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
 requestAnimationFrame(loop);
 
 })();
